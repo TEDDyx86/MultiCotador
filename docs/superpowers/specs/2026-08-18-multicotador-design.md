@@ -36,8 +36,35 @@ comparativo usa apenas os **4 produtos com valor de resgate**, porque duas de su
 
 Ferramenta interna: o corretor e sua equipe. Sem multi-tenant, sem captura de lead.
 
-Proteção de acesso: middleware verificando uma senha compartilhada em variável de
-ambiente. Suficiente para o uso interno e não bloqueia o deploy.
+### Autenticação
+
+Senha compartilhada, com o segredo nunca saindo do servidor.
+
+**Regras invioláveis:**
+
+1. A variável **não** leva o prefixo `NEXT_PUBLIC_`. Qualquer variável com esse prefixo
+   é embutida no bundle JavaScript e fica legível por qualquer visitante. Isso é o erro
+   mais comum e o mais fácil de cometer.
+2. O repositório guarda apenas `.env.example` com a chave vazia. O `.gitignore` bloqueia
+   `.env`, `.env.local` e `.env*.local`.
+3. A env var guarda um **hash scrypt** da senha, nunca o texto puro. Quem tiver acesso ao
+   painel da Vercel não lê a senha.
+4. A comparação usa `crypto.timingSafeEqual` — comparar strings com `===` vaza o tamanho
+   do prefixo correto por diferença de tempo.
+5. A sessão é um **cookie assinado por HMAC**, com `httpOnly`, `secure`, `sameSite=strict`
+   e expiração. `httpOnly` impede que JavaScript da página leia o cookie.
+6. O middleware protege todas as rotas exceto a de login e os ativos estáticos. A rota
+   de API de geração de PDF também é protegida — senão o cálculo fica aberto.
+7. A rota de login tem limite de tentativas por IP, para não virar alvo de força bruta.
+
+**Variáveis:**
+| Nome | Conteúdo |
+|---|---|
+| `APP_SENHA_HASH` | hash scrypt da senha de acesso |
+| `APP_SESSAO_SEGREDO` | chave aleatória de 32 bytes para assinar o cookie |
+
+Nenhuma das duas é referenciada em código de cliente. Um teste verifica que o bundle
+gerado não contém os valores.
 
 ## Arquitetura
 
@@ -146,7 +173,7 @@ Cálculo é síncrono e local — sem rede, sem banco. A única operação lenta
 **Afetam o cálculo:** sexo, data de nascimento, capital segurado.
 
 **Aparecem no documento:** nome completo, estado civil, regime de bens (só quando
-casado), profissão, número de herdeiros, renda mensal.
+casado), profissão.
 
 ## Interface
 
