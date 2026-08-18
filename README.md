@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Configuração
+
+Copie `.env.example` para `.env.local` e preencha:
+
+- `APP_SENHA_HASH` — gere com `npx tsx scripts/gerar-hash.ts <sua-senha>`
+- `APP_SESSAO_SEGREDO` — gere com `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+Na Vercel, cadastre as duas em Settings → Environment Variables. **Nenhuma das
+duas leva o prefixo `NEXT_PUBLIC_`** — variáveis com esse prefixo são embutidas
+no JavaScript enviado ao navegador.
+
 ## Getting Started
 
 First, run the development server:
