@@ -53,3 +53,7 @@ _analise/__pycache__/
 # Sao insumo do pipeline, nao codigo. A rastreabilidade fica na coluna
 # "origem" dos CSVs em _analise/, que guarda o nome de cada arquivo.
 ESTUDOS POR IDADE/
+
+# Gerados automaticamente pelo "next dev" (Next 16); nao sao do projeto.
+AGENTS.md
+CLAUDE.md
