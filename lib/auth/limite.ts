@@ -33,6 +33,11 @@ export function bloqueado(ip: string): boolean {
   return recentes(ip).length >= LIMITE
 }
 
+/** Zera o historico de um IP. Chamado apos login bem-sucedido. */
+export function limparIp(ip: string): void {
+  tentativas.delete(ip)
+}
+
 /** Limpa o estado. Existe para os testes; nao usar em producao. */
 export function limparTentativas(): void {
   tentativas.clear()

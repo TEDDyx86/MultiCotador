@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verificarSenha } from '@/lib/auth/senha'
 import { assinarSessao } from '@/lib/auth/sessao'
-import { bloqueado, registrarTentativa } from '@/lib/auth/limite'
+import { bloqueado, limparIp, registrarTentativa } from '@/lib/auth/limite'
 import {
   COOKIE_SESSAO,
   DURACAO_SESSAO_SEGUNDOS,
@@ -42,6 +42,10 @@ export async function POST(requisicao: Request) {
     // Mensagem generica: nao confirma nem nega nada sobre a senha correta.
     return NextResponse.json({ erro: 'Senha invalida.' }, { status: 401 })
   }
+
+  // Quem errou quatro vezes e acertou na quinta nao deve carregar as quatro
+  // marcas pelos proximos quinze minutos.
+  limparIp(ip)
 
   const token = await assinarSessao(
     segredoObrigatorio('APP_SESSAO_SEGREDO'),

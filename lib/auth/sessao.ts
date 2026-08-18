@@ -2,7 +2,8 @@
  * Sessao em cookie assinado por HMAC-SHA256.
  *
  * Usa Web Crypto (crypto.subtle) em vez de node:crypto porque precisa rodar
- * no middleware, que executa no Edge Runtime. Web Crypto existe nos dois.
+ * no proxy (o antigo middleware), que executa no Edge Runtime. Web Crypto
+ * existe nos dois.
  *
  * O cookie nao guarda segredo nenhum — so a data de expiracao e a assinatura.
  * Nao ha o que extrair dele; adulterar invalida a assinatura.

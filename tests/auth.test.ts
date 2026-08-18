@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { gerarHash, verificarSenha } from '@/lib/auth/senha'
 import { assinarSessao, verificarSessao } from '@/lib/auth/sessao'
-import { registrarTentativa, bloqueado, limparTentativas } from '@/lib/auth/limite'
+import {
+  registrarTentativa,
+  bloqueado,
+  limparIp,
+  limparTentativas,
+} from '@/lib/auth/limite'
 
 describe('hash de senha', () => {
   it('aceita a senha correta', async () => {
@@ -81,5 +86,32 @@ describe('limite de tentativas', () => {
     limparTentativas()
     for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.3')
     expect(bloqueado('10.0.0.4')).toBe(false)
+  })
+
+  it('limparIp libera um IP bloqueado', () => {
+    // Quem erra quatro vezes e acerta na quinta nao pode ficar quinze minutos
+    // pagando pelos erros ja perdoados pelo login bem-sucedido.
+    limparTentativas()
+    for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.5')
+    expect(bloqueado('10.0.0.5')).toBe(true)
+
+    limparIp('10.0.0.5')
+    expect(bloqueado('10.0.0.5')).toBe(false)
+  })
+
+  it('limparIp nao afeta outro IP', () => {
+    limparTentativas()
+    for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.6')
+    for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.7')
+
+    limparIp('10.0.0.6')
+    expect(bloqueado('10.0.0.6')).toBe(false)
+    expect(bloqueado('10.0.0.7')).toBe(true)
+  })
+
+  it('limparIp em IP sem historico nao lanca', () => {
+    limparTentativas()
+    expect(() => limparIp('10.0.0.8')).not.toThrow()
+    expect(bloqueado('10.0.0.8')).toBe(false)
   })
 })
