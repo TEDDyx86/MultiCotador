@@ -68,3 +68,22 @@ describe('comparativo — escala com o capital', () => {
       .toBe(um.linhas[0].aporteAnual.times(2).toFixed(2))
   })
 })
+
+describe('comparativo — nenhuma linha sai com resgate zerado', () => {
+  // Um resgate de R$ 0,00 no documento le como "este produto nao tem resgate",
+  // quando a causa real e dado ausente. Os quatro produtos do comparativo TEM
+  // resgate por definicao, entao zero ali e sempre defeito, nunca informacao.
+  it('em toda a faixa etaria e nos dois sexos', () => {
+    const zerados: string[] = []
+    for (const sexo of ['M', 'F'] as const) {
+      for (let idade = 14; idade <= 80; idade++) {
+        for (const l of montarComparativo(repo, sexo, idade, new Decimal('1000000')).linhas) {
+          if (l.resgate10a.isZero()) {
+            zerados.push(`${l.seguradora} ${sexo} ${idade} anos`)
+          }
+        }
+      }
+    }
+    expect(zerados).toEqual([])
+  })
+})

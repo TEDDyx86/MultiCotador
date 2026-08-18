@@ -8,11 +8,69 @@ Regra de break-even aprovada:
     (vazio quando o resgate nunca alcanca os aportes)
 """
 import json, os, csv
+from decimal import Decimal
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 IDADE_CORTE_FIXO = 55
 
 d = json.load(open(os.path.join(AQUI, 'curvas_resgate.json'), encoding='utf-8'))
+
+
+def preencher_lacunas(registros):
+    """
+    Duas tarifas vieram da planilha porque nao existe PDF para elas
+    (MetLife Vida Total F/62 e Prudential Vida Inteira M/33). Sem PDF nao ha
+    curva de resgate, e a linha entraria no comparativo com R$ 0,00 -- que o
+    leitor entende como "este produto nao tem resgate", quando a verdade e
+    "faltou o dado". Sao coisas muito diferentes num documento entregue ao
+    cliente.
+
+    O valor e derivado da curva canonica, nao estimado: para MetLife e
+    Prudential foi verificado que a reserva depois da quitacao depende apenas
+    da idade atingida, com 0,0000% de divergencia entre dezenas de estudos.
+    O resgate no 10o ano da entrada X e, portanto, o mesmo que aparece na
+    idade X+10 de qualquer outro estudo da mesma seguradora.
+    """
+    import motor
+
+    curva = {}
+    with open(os.path.join(AQUI, 'curva_resgate_canonica.csv'), encoding='utf-8-sig') as fh:
+        for r in csv.DictReader(fh, delimiter=';'):
+            # So aproveita onde a propriedade foi verificada sem divergencia
+            if r['dispersao_pct'] == '0.0000':
+                curva[(r['produto'], r['sexo'], int(r['idade_atingida']))] = \
+                    Decimal(r['resgate_por_1mm'])
+
+    tarifas = motor.carregar()
+    existentes = {(r['produto'], r['sexo'], r['idade_entrada']) for r in registros}
+    preenchidas = []
+
+    for (produto, sexo, idade) in sorted(tarifas):
+        if (produto, sexo, idade) in existentes:
+            continue
+        resgate = curva.get((produto, sexo, idade + 10))
+        if resgate is None:
+            continue
+        cotacao = motor.cotar(tarifas, produto, sexo, idade, 1_000_000)
+        aportes = cotacao.premio_anual_com_iof * 10
+        registros.append({
+            'produto': produto, 'sexo': sexo, 'idade_entrada': idade,
+            # Sem a curva ano a ano so da para afirmar se ja alcancou no 10o ano.
+            'breakeven': 10 if resgate >= aportes else None,
+            'resgate_10a': float(resgate),
+            'aportes_10a': float(aportes),
+        })
+        preenchidas.append(f'{produto} {sexo} {idade}')
+
+    if preenchidas:
+        print('lacunas preenchidas pela curva canonica:')
+        for p in preenchidas:
+            print(f'  {p}')
+        print()
+    return registros
+
+
+d = preencher_lacunas(d)
 linhas = []
 for r in d:
     if r['resgate_10a'] is None or not r['aportes_10a']:
