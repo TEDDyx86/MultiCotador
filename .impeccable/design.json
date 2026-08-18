@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-18T20:34:00.000Z",
+  "title": "Design System: Multicotador RT",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Champagne Gold",
+        "canonical": "#D4A24E",
+        "tonalRamp": ["#362205", "#5C3D0E", "#8C5F1C", "#B8822F", "#D4A24E", "#E5B869", "#F3D089", "#FBF0DC"]
+      },
+      "canvas-bg": {
+        "role": "neutral",
+        "displayName": "Midnight Canvas",
+        "canonical": "#061224",
+        "tonalRamp": ["#030912", "#061224", "#0D1E38", "#152C50", "#214275", "#325E9E", "#5B87C9", "#A6C2ED"]
+      },
+      "plate-bg": {
+        "role": "neutral",
+        "displayName": "Deep Vault Plate",
+        "canonical": "#0E2246",
+        "tonalRamp": ["#071123", "#0E2246", "#142F61", "#1C3F7F", "#2754A3", "#3B72D4", "#6B9AEC", "#B5CFF8"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero values and main numbers." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles." },
+      "body": { "displayName": "Body", "purpose": "Financial data and tables." }
+    },
+    "shadows": [
+      { "name": "gold-glow", "value": "0 4px 24px -4px rgba(212, 162, 78, 0.25)", "purpose": "Highlight on top ranked insurer and value preserved." },
+      { "name": "plate-depth", "value": "0 10px 30px -10px rgba(0, 0, 0, 0.5)", "purpose": "Depth for main containers." }
+    ],
+    "motion": [
+      { "name": "ease-out-smooth", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Smooth financial count-up and cascade reveal." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Gold Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Calculates and triggers comparison.",
+      "html": "<button class=\"ds-btn-primary\">GERAR COMPARATIVO</button>",
+      "css": ".ds-btn-primary { background: #D4A24E; color: #061224; padding: 12px 24px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; } .ds-btn-primary:hover { background: #E5B869; transform: translateY(-1px); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Private Wealth Vault",
+    "overview": "O Multicotador RT une a sobriedade e segurança de uma sala de Family Office com a clareza e velocidade de uma mesa de operações.",
+    "keyCharacteristics": [
+      "Fundo noturno profundo e sofisticado com atmosfera de cofre de alta segurança.",
+      "Acentos metálicos em Ouro Champagne reservado para pontos de decisão e destaques.",
+      "Tipografia precisa e legibilidade financeira impecável."
+    ],
+    "rules": [
+      { "name": "The Rarity of Gold Rule", "body": "O ouro champagne é reservado exclusivamente para valores-chave, ações primárias e a seguradora vencedora.", "section": "colors" }
+    ],
+    "dos": [
+      "Do manter alto contraste em todos os textos financeiros e células da tabela.",
+      "Do preservar a integridade das marcas das seguradoras parceiras."
+    ],
+    "donts": [
+      "Don't usar azuis cianos saturados ou tons infantis.",
+      "Don't ocultar informações técnicas de break-even real ou tarifas estimadas do corretor."
+    ]
+  }
+}

@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
-/* Tema cofre: fundo profundo, placa metalica e acento ciano. */
+/*
+ * Design System: Multicotador RT (The Private Wealth Vault)
+ * Paleta nobre e executiva inspirada no monograma RT (marcas/textura-cabecalho.png).
+ */
 @theme {
-  --color-cofre-fundo: #0A1A33;
-  --color-cofre-placa: #132844;
-  --color-cofre-placa-clara: #1C3557;
-  --color-cofre-borda: #1C3557;
-  --color-cofre-acento: #22A7F0;
-  --color-cofre-texto: #E8EEF7;
-  --color-cofre-suave: #8FA3BF;
-  --color-cofre-alerta: #F0A722;
+  --color-cofre-fundo: #050E1D;
+  --color-cofre-placa: #0B1B38;
+  --color-cofre-placa-clara: #10264D;
+  --color-cofre-borda: #183360;
+  --color-cofre-borda-ouro: #C6923C;
+  --color-cofre-acento: #D4A24E;
+  --color-cofre-acento-hover: #E5B869;
+  --color-cofre-acento-deep: #A8742A;
+  --color-cofre-texto: #F4F7FC;
+  --color-cofre-suave: #9EB3CD;
+  --color-cofre-alerta: #E69526;
+  --color-cofre-perigo: #E05353;
+  --color-cofre-sucesso: #2ECC71;
 }
 
-/*
- * O boilerplate do create-next-app trazia aqui um `body { background; color }`
- * fora de qualquer cascade layer, mais o par --background/--foreground e o
- * @media (prefers-color-scheme: dark) que os redefinia. Regra sem layer sempre
- * vence regra em layer, entao aquele body sobrescrevia as utilitarias do
- * Tailwind (que vivem em @layer utilities) e a tela abria branca com Arial,
- * ignorando o bg-cofre-fundo do <body>. O tema agora e so este arquivo.
- */
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Efeito de foco acessivel e nobre */
+:focus-visible {
+  outline: 2px solid var(--color-cofre-acento);
+  outline-offset: 2px;
+}
+
+/* Efeito de iluminação de estúdio no fundo */
+.bg-vault-studio {
+  background-color: #050E1D;
+  background-image: 
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(212, 162, 78, 0.10), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(16, 38, 77, 0.6), transparent 85%),
+    radial-gradient(circle at 10% 40%, rgba(14, 34, 70, 0.4), transparent 45%),
+    radial-gradient(circle at 90% 60%, rgba(14, 34, 70, 0.35), transparent 45%);
+}
+
+/* Vinheta de monograma com máscara suave */
+.bg-monogram-vignette {
+  background-image: url('/marcas/textura-cabecalho.png');
+  background-size: 320px;
+  opacity: 0.035;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 85%);
 }

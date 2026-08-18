@@ -64,3 +64,34 @@ export function numeroParaMascara(digitos: string): string {
   const comMilhar = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   return `${comMilhar},${centavos.slice(-2)}`
 }
+
+/** Aplica mascara de data DD/MM/AAAA a medida que o usuario digita */
+export function mascaraData(valor: string): string {
+  const digitos = valor.replace(/\D/g, '').slice(0, 8)
+  if (digitos.length <= 2) return digitos
+  if (digitos.length <= 4) return `${digitos.slice(0, 2)}/${digitos.slice(2)}`
+  return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`
+}
+
+/** Converte string DD/MM/AAAA para objeto Date caso seja valida */
+export function dataBrasileiraParaDate(texto: string): Date | null {
+  const digitos = texto.replace(/\D/g, '')
+  if (digitos.length !== 8) return null
+
+  const dia = parseInt(digitos.slice(0, 2), 10)
+  const mes = parseInt(digitos.slice(2, 4), 10)
+  const ano = parseInt(digitos.slice(4, 8), 10)
+
+  if (ano < 1900 || ano > new Date().getFullYear()) return null
+  if (mes < 1 || mes > 12) return null
+
+  const data = new Date(ano, mes - 1, dia)
+  if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) {
+    return null
+  }
+
+  // Nao pode ser data futura
+  if (data > new Date()) return null
+
+  return data
+}

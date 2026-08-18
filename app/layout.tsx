@@ -13,18 +13,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Multicotador | Robson Tavernard",
-  description: "Comparativo de seguros de vida Whole Life entre seguradoras",
+  title: "Multicotador Whole Life | Robson Tavernard",
+  description: "Comparativo de seguros de vida Whole Life entre seguradoras (MAG, Icatu, MetLife, Prudential)",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-cofre-fundo font-sans text-cofre-texto">
-        {children}
+      <body className="relative flex min-h-full flex-col bg-vault-studio font-sans text-cofre-texto selection:bg-cofre-acento/30 selection:text-cofre-texto">
+        {/* Marca d'água de monograma com vinheta radial suave */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-0 bg-monogram-vignette mix-blend-screen"
+        />
+        <div className="relative z-10 flex min-h-full flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );
