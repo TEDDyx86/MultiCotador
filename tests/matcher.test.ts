@@ -58,4 +58,19 @@ describe('matcher das rotas protegidas', () => {
     expect(protegido('/_next/webpack-hmr')).toBe(true)
     expect(protegido('/favicon-x.ico')).toBe(true)
   })
+
+  it('libera as imagens de marca', () => {
+    // Ja quebrou uma vez: com /marcas/ protegido, a logo do cabecalho e a
+    // textura de fundo vinham como redirecionamento no lugar do arquivo, e a
+    // tela abria com imagem quebrada. Sao imagens publicas por natureza; o
+    // que precisa ficar trancado sao as tarifas, que nunca saem do servidor.
+    expect(protegido('/marcas/rt-horizontal-branca.png')).toBe(false)
+    expect(protegido('/marcas/mag.png')).toBe(false)
+    expect(protegido('/marcas/textura-cabecalho.png')).toBe(false)
+  })
+
+  it('nao libera nomes que apenas comecam com marcas', () => {
+    expect(protegido('/marcas-internas/tabela.json')).toBe(true)
+    expect(protegido('/marcasx')).toBe(true)
+  })
 })

@@ -50,17 +50,29 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
                 : 'border-cofre-borda bg-cofre-placa'
             }`}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-cofre-suave">
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <span
+                className={`text-xs uppercase tracking-wider ${
+                  indice === 0 ? 'font-semibold text-cofre-acento' : 'text-cofre-suave'
+                }`}
+              >
                 {indice + 1}º{indice === 0 && ' • recomendada'}
               </span>
-              <Image
-                src={linha.logo}
-                alt={linha.seguradora}
-                width={60}
-                height={20}
-                className="h-4 w-auto object-contain opacity-80"
-              />
+              {/*
+               * As logos das seguradoras foram desenhadas para papel branco: no
+               * fundo escuro do tema elas praticamente desaparecem. A placa
+               * clara devolve o contraste que cada marca espera, sem alterar as
+               * cores oficiais — recolorir logo de terceiro nao e opcao.
+               */}
+              <span className="shrink-0 rounded bg-white/95 px-1.5 py-1">
+                <Image
+                  src={linha.logo}
+                  alt={linha.seguradora}
+                  width={60}
+                  height={20}
+                  className="h-3.5 w-auto object-contain"
+                />
+              </span>
             </div>
             <p className="text-lg font-semibold">
               <ValorAnimado texto={linha.aporteAnual} />
@@ -116,19 +128,26 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
         </table>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.38 }}
-        className="rounded-xl border border-cofre-acento/30 bg-gradient-to-r from-cofre-placa to-cofre-placa-clara p-5"
-      >
-        <p className="text-xs uppercase tracking-[0.18em] text-cofre-suave">
-          Valor preservado em 10 anos
-        </p>
-        <p className="mt-1 text-2xl font-semibold text-cofre-acento">
-          <ValorAnimado texto={valorPreservado} duracao={900} />
-        </p>
-      </motion.div>
+      {/*
+       * Com uma unica seguradora elegivel nao ha o que preservar: o bloco
+       * mostraria "R$ 0,00", que o leitor entende como "nao ha economia"
+       * quando o certo e "nao ha comparacao possivel". Melhor nao exibir.
+       */}
+      {comparativo.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          className="rounded-xl border border-cofre-acento/30 bg-gradient-to-r from-cofre-placa to-cofre-placa-clara p-5"
+        >
+          <p className="text-xs uppercase tracking-[0.18em] text-cofre-suave">
+            Valor preservado em 10 anos
+          </p>
+          <p className="mt-1 text-2xl font-semibold text-cofre-acento">
+            <ValorAnimado texto={valorPreservado} duracao={900} />
+          </p>
+        </motion.div>
+      )}
 
       {(algumAbaixo || algumEstimado || indisponiveis.length > 0) && (
         <div className="space-y-2 rounded-xl border border-cofre-alerta/30 bg-cofre-alerta/[0.06] p-4 text-sm">
@@ -156,7 +175,7 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
 
       <details className="rounded-xl border border-cofre-borda bg-cofre-placa p-4">
         <summary className="cursor-pointer text-sm text-cofre-suave">
-          Ver os {todos.length} produtos cotados
+          {todos.length === 1 ? 'Ver o único produto cotado' : `Ver os ${todos.length} produtos cotados`}
         </summary>
         <ul className="mt-3 space-y-2 text-sm">
           {todos.map((p) => (

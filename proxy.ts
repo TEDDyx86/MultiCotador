@@ -18,10 +18,17 @@ const TAMANHO_MINIMO_SEGREDO = 32
  * A rota de API do comparativo fica protegida de proposito: deixar o calculo
  * aberto anularia a tranca da tela.
  *
+ * `marcas/` fica de fora porque sao os arquivos de public/marcas: as logos das
+ * seguradoras, a marca do corretor e a textura do cabecalho. Proteger imagem de
+ * marca nao acrescenta seguranca — sao publicas por natureza — e protege-las
+ * quebra a tela: um background-image em CSS e a tela de login nao carregam
+ * cookie de sessao, entao viriam com redirecionamento no lugar do arquivo.
+ * O que precisa ficar trancado sao as tarifas, e elas nunca saem do servidor.
+ *
  * Exportado para poder ser testado diretamente em tests/matcher.test.ts.
  */
 export const PADRAO_ROTAS_PROTEGIDAS =
-  '/((?!login$|login/|api/login$|_next/static|_next/image|favicon\\.ico).*)'
+  '/((?!login$|login/|api/login$|_next/static|_next/image|marcas/|favicon\\.ico).*)'
 
 /**
  * Bloqueia tudo que nao tenha cookie de sessao valido.
@@ -64,6 +71,6 @@ export async function proxy(requisicao: NextRequest) {
  */
 export const config = {
   matcher: [
-    '/((?!login$|login/|api/login$|_next/static|_next/image|favicon\\.ico).*)',
+    '/((?!login$|login/|api/login$|_next/static|_next/image|marcas/|favicon\\.ico).*)',
   ],
 }

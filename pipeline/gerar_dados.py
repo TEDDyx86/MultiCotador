@@ -17,7 +17,7 @@ PRODUTOS = [
      "anosPagamento": 10, "idadeMin": 16, "idadeMax": 80,
      "temResgate": True, "premioJaComIof": True, "entraNoComparativo": True},
     {"id": "MAG_WL_SUCESSAO_10", "seguradoraId": "MAG", "seguradora": "MAG",
-     "nome": "Whole Life Sucessao 10 Anos", "codigoSusep": "3115", "logo": "/marcas/mag.png",
+     "nome": "Whole Life Sucessão 10 Anos", "codigoSusep": "3115", "logo": "/marcas/mag.png",
      "anosPagamento": 10, "idadeMin": 16, "idadeMax": 80,
      "temResgate": False, "premioJaComIof": True, "entraNoComparativo": False},
     {"id": "METLIFE_VIDA_TOTAL_10", "seguradoraId": "METLIFE", "seguradora": "MetLife",

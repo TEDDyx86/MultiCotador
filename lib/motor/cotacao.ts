@@ -36,14 +36,14 @@ export function cotar(
   const tarifa = repo.tarifa(produtoId, sexo, idade)
   if (!tarifa) {
     throw new TarifaIndisponivel(
-      `${produto.nome} nao esta disponivel aos ${idade} anos ` +
+      `${produto.nome} não está disponível aos ${idade} anos ` +
         `(faixa de ${produto.idadeMin} a ${produto.idadeMax}).`,
     )
   }
 
   if (tarifa.capitalMax && capital.greaterThan(tarifa.capitalMax)) {
     throw new TarifaIndisponivel(
-      `${produto.nome} aceita no maximo ${formatarBrl(tarifa.capitalMax)} ` +
+      `${produto.nome} aceita no máximo ${formatarBrl(tarifa.capitalMax)} ` +
         `de capital aos ${idade} anos.`,
     )
   }
