@@ -16,13 +16,25 @@ describe('cotacao basica', () => {
 })
 
 describe('linearidade do capital', () => {
-  const base = cotar(repo, 'ICATU_HORIZONTE_WL10', 'M', 40, new Decimal('1000000'))
+  // A expectativa vem da TARIFA, o dado de entrada, e nao do premio de R$ 1mm
+  // ja arredondado: arredondar antes de escalar amplifica o erro pelo fator
+  // (a 2 casas, x10 desloca o resultado em ate 5 centavos).
+  const taxa = repo.tarifa('ICATU_HORIZONTE_WL10', 'M', 40)!.taxaAnualPor1mm
 
   it.each(['0.5', '2', '3.7', '10'])('escala proporcionalmente com fator %s', (fator) => {
     const capital = new Decimal('1000000').times(fator)
     const c = cotar(repo, 'ICATU_HORIZONTE_WL10', 'M', 40, capital)
-    const esperado = base.premioAnual.times(fator).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+    const esperado = taxa.times(fator).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
     expect(c.premioAnual.toFixed(2)).toBe(esperado.toFixed(2))
+  })
+
+  it('nao embute taxa fixa de apolice', () => {
+    const um = cotar(repo, 'ICATU_HORIZONTE_WL10', 'M', 40, new Decimal('1000000'))
+    const dez = cotar(repo, 'ICATU_HORIZONTE_WL10', 'M', 40, new Decimal('10000000'))
+    // Houvesse uma taxa fixa F, dez - 10x um valeria -9F. Sem ela, sobra
+    // apenas o ruido de arredondamento do premio de referencia.
+    const residuo = dez.premioAnual.minus(um.premioAnual.times(10)).abs()
+    expect(residuo.lessThan(new Decimal('0.05'))).toBe(true)
   })
 
   it('aceita capital com centavos', () => {

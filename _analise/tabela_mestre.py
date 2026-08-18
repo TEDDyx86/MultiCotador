@@ -90,7 +90,7 @@ for x in pdfs:
     if x['seguradora'] in PREMIO_JA_COM_IOF:
         anual = anual / (1 + IOF)   # normaliza para premio liquido
     tab[(produto, sexo)][idade] = {
-        'taxa_1mm': round(anual / capital * 1_000_000, 2),
+        'taxa_1mm': round(anual / capital * 1_000_000, 6),
         'fonte': 'PDF',
         'origem': x['arquivo'],
         'capital_max': capital if capital < 1_000_000 else None,
@@ -121,7 +121,7 @@ for arq, aba, produto, sexo, tem_iof in PLANILHAS:
             continue
         taxa = valor / (1 + IOF) if tem_iof else valor
         tab[(produto, sexo)][idade] = {
-            'taxa_1mm': round(taxa, 2), 'fonte': 'XLSX',
+            'taxa_1mm': round(taxa, 6), 'fonte': 'XLSX',
             'origem': f'{arq}#{aba}', 'capital_max': None,
         }
 
@@ -136,7 +136,7 @@ for chave, por_idade in tab.items():
         a, b = por_idade[ant]['taxa_1mm'], por_idade[pos]['taxa_1mm']
         peso = (idade - ant) / (pos - ant)
         por_idade[idade] = {
-            'taxa_1mm': round(a * (b / a) ** peso, 2), 'fonte': 'ESTIMADO',
+            'taxa_1mm': round(a * (b / a) ** peso, 6), 'fonte': 'ESTIMADO',
             'origem': f'interpolacao geometrica {ant}<->{pos}', 'capital_max': None,
         }
 
@@ -147,7 +147,7 @@ for (produto, sexo), por_idade in sorted(tab.items()):
         r = por_idade[idade]
         linhas.append({
             'produto': produto, 'sexo': sexo, 'idade': idade,
-            'taxa_anual_por_1mm': f"{r['taxa_1mm']:.2f}",
+            'taxa_anual_por_1mm': f"{r['taxa_1mm']:.6f}",
             'capital_max': f"{r['capital_max']:.0f}" if r['capital_max'] else '',
             'fonte': r['fonte'], 'origem': r['origem'],
         })

@@ -23,7 +23,7 @@ describe('tarifa', () => {
     const tarifa = repositorioJson.tarifa('MAG_WL_INTEGRAL_10', 'M', 40)
     expect(tarifa).toBeDefined()
     expect(tarifa?.taxaAnualPor1mm).toBeInstanceOf(Decimal)
-    expect(tarifa?.taxaAnualPor1mm.toString()).toBe('45093.84')
+    expect(tarifa?.taxaAnualPor1mm.toString()).toBe('45093.843395')
   })
 
   it('devolve undefined para combinacao inexistente', () => {
