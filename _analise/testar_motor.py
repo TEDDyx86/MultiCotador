@@ -47,7 +47,9 @@ for x in pdfs:
         esperado = Decimal(str(x['anual_c_iof']))
     else:
         esperado = Decimal(str(x['anual']))
-    if abs(c.premio_anual_com_iof - esperado) <= Decimal('0.01'):
+    # Igualdade estrita: uma tolerancia de 1 centavo mascarava perda de
+    # precisao na ingestao das tarifas em vez de prova-la ausente.
+    if c.premio_anual_com_iof == esperado:
         ok += 1
     else:
         falha += 1
@@ -61,11 +63,16 @@ for a, e, g in erros[:20]:
 
 # --- checagens de linearidade e fracionamento ---
 print('\n--- linearidade ---')
-base = motor.cotar(tab, 'ICATU_HORIZONTE_WL10', 'M', 40, 1_000_000)
+# A expectativa vem da TARIFA, o dado de entrada, e nao do premio de R$ 1mm ja
+# arredondado: arredondar antes de escalar amplifica o erro pelo proprio fator.
+taxa = tab[('ICATU_HORIZONTE_WL10', 'M', 40)].taxa_anual_por_1mm
+falhas_linearidade = 0
 for mult in ['0.5', '2', '3.7', '10']:
     c = motor.cotar(tab, 'ICATU_HORIZONTE_WL10', 'M', 40, Decimal('1000000') * Decimal(mult))
-    esperado = motor.brl(base.premio_anual * Decimal(mult))
-    marca = 'OK' if abs(c.premio_anual - esperado) <= Decimal('0.01') else 'FALHA'
+    esperado = motor.brl(taxa * Decimal(mult))
+    ok = c.premio_anual == esperado
+    falhas_linearidade += 0 if ok else 1
+    marca = 'OK' if ok else 'FALHA'
     print(f'  capital x{mult:>4}: {c.premio_anual:>14,.2f}  esperado {esperado:>14,.2f}  {marca}')
 
 print('\n--- capital quebrado e IOF ---')
@@ -76,4 +83,4 @@ print(f'  anual com IOF   R$ {c.premio_anual_com_iof:>12,.2f}'
 print(f'  mensal com IOF  R$ {c.premio_mensal_com_iof:>12,.2f}'
       f'   (x12 = {c.premio_mensal_com_iof * 12:,.2f})')
 
-sys.exit(1 if falha else 0)
+sys.exit(1 if (falha or falhas_linearidade) else 0)
