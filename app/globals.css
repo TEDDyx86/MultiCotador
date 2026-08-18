@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Tema cofre: fundo profundo, placa metalica e acento ciano. */
+@theme {
+  --color-cofre-fundo: #0A1A33;
+  --color-cofre-placa: #132844;
+  --color-cofre-placa-clara: #1C3557;
+  --color-cofre-borda: #1C3557;
+  --color-cofre-acento: #22A7F0;
+  --color-cofre-texto: #E8EEF7;
+  --color-cofre-suave: #8FA3BF;
+  --color-cofre-alerta: #F0A722;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
