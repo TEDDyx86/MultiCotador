@@ -89,15 +89,34 @@ não se verifica. O corretor vê o número real na tela e decide como conduzir.
 | MAG Sucessão homem 63 anos | Único valor `ESTIMADO` da base. O PDF arquivado é do produto Integral, não Sucessão | Recotar na MAG |
 | MetLife Legado mulher 44–47 | Quatro idades com prêmio idêntico (R$ 34.647,83), mesma data de cotação | Confirmar com a MetLife |
 | MetLife Vida Total 69→70 | Prêmio **cai** entre essas idades, na mesma data de cotação | Confirmar com a MetLife |
-| MetLife Vida Total mulher 62 | Sem PDF; valor veio da planilha | Recotar quando conveniente |
-| Prudential homem 33 | Sem PDF; valor veio da planilha | Recotar quando conveniente |
+| MetLife Vida Total mulher 62 | Sem PDF; tarifa veio da planilha e o resgate foi derivado da curva canônica | Recotar quando conveniente |
+| Prudential homem 33 | Idem | Recotar quando conveniente |
 | Planilha MAG Sucessão | Só tem aba HOMEM, preenchida até 40 anos, com valor do produto errado na linha 41 | Descartar — os PDFs cobrem tudo |
 | Pasta `MAG/H 12.05.2026` | Reemissão do estudo de `MAG/HOMEM_`: prêmios idênticos, só as reservas mudam | Não é produto novo; manter fora da base |
 | Logo Blue3 | 240×240 px com fundo sólido, sem transparência | Pedir SVG ou PNG maior para melhorar a impressão |
 
 ---
 
-## 4. Premissas a confirmar
+## 4. Limitações conhecidas do que já está construído
+
+### 4.1 Break-even derivado nas duas linhas sem PDF
+Para MetLife F/62 e Prudential M/33 o valor de resgate foi derivado da curva
+canônica, que só cobre o período **pós-quitação** (ano 10 em diante). Dá para afirmar
+se o resgate já alcançou o aportado no 10º ano, mas não em que ano exato isso ocorreu
+quando foi antes. As duas linhas trazem `breakeven = 10` ou `null` conforme o teste do
+10º ano, e não um valor apurado ano a ano como as demais.
+
+Sem efeito no documento final, que apresenta sempre o 10º ano. Afeta apenas a
+informação interna do corretor nessas duas combinações.
+
+### 4.2 Precisão das tarifas
+As tarifas são gravadas com 6 casas decimais. A folga mínima até a fronteira de
+arredondamento, nos casos que sofrem conversão de IOF, é de aproximadamente 10.000×
+o erro introduzido. Se um dia a alíquota de IOF mudar ou surgirem seguradoras com
+outra convenção de arredondamento, revalidar rodando `_analise/testar_motor.py`, que
+agora exige igualdade estrita.
+
+## 5. Premissas a confirmar
 
 - **Idade** calculada como anos completos na data da simulação. Confere com os estudos
   (nascimento 01/01/1986, estudo em 14/01/2026 → 40 anos). Se alguma seguradora usar
