@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { gerarHash, verificarSenha } from '@/lib/auth/senha'
 import { assinarSessao, verificarSessao } from '@/lib/auth/sessao'
+import { registrarTentativa, bloqueado, limparTentativas } from '@/lib/auth/limite'
 
 describe('hash de senha', () => {
   it('aceita a senha correta', async () => {
@@ -60,5 +61,25 @@ describe('cookie de sessao', () => {
     expect(await verificarSessao(SEGREDO, 'lixo')).toBe(false)
     expect(await verificarSessao(SEGREDO, '')).toBe(false)
     expect(await verificarSessao(SEGREDO, 'a.b.c')).toBe(false)
+  })
+})
+
+describe('limite de tentativas', () => {
+  it('libera enquanto esta abaixo do limite', () => {
+    limparTentativas()
+    for (let i = 0; i < 4; i++) registrarTentativa('10.0.0.1')
+    expect(bloqueado('10.0.0.1')).toBe(false)
+  })
+
+  it('bloqueia ao atingir o limite', () => {
+    limparTentativas()
+    for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.2')
+    expect(bloqueado('10.0.0.2')).toBe(true)
+  })
+
+  it('isola um IP do outro', () => {
+    limparTentativas()
+    for (let i = 0; i < 5; i++) registrarTentativa('10.0.0.3')
+    expect(bloqueado('10.0.0.4')).toBe(false)
   })
 })
