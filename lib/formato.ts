@@ -41,3 +41,26 @@ export function percentual(valor: Decimal): string {
 export function dataExtenso(data: Date): string {
   return `${data.getDate()} de ${MESES[data.getMonth()]} de ${data.getFullYear()}`
 }
+
+/** Converte o texto exibido no campo para um numero em formato decimal. */
+export function moedaParaNumero(texto: string): string {
+  const digitos = texto.replace(/\D/g, '')
+  if (digitos === '') return ''
+  const centavos = digitos.padStart(3, '0')
+  const inteiros = centavos.slice(0, -2).replace(/^0+(?=\d)/, '')
+  return `${inteiros}.${centavos.slice(-2)}`
+}
+
+/**
+ * Monta a mascara a partir dos digitos crus. O usuario digita apenas numeros e
+ * os centavos se formam da direita para a esquerda, como numa calculadora —
+ * evita ter que posicionar cursor no meio de pontuacao.
+ */
+export function numeroParaMascara(digitos: string): string {
+  const limpos = digitos.replace(/\D/g, '')
+  if (limpos === '') return ''
+  const centavos = limpos.padStart(3, '0')
+  const inteiros = centavos.slice(0, -2).replace(/^0+(?=\d)/, '')
+  const comMilhar = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return `${comMilhar},${centavos.slice(-2)}`
+}

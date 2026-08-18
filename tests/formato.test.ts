@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import Decimal from 'decimal.js'
-import { moeda, moedaCurta, percentual, dataExtenso } from '@/lib/formato'
+import {
+  moeda,
+  moedaCurta,
+  percentual,
+  dataExtenso,
+  moedaParaNumero,
+  numeroParaMascara,
+} from '@/lib/formato'
 
 describe('moeda', () => {
   it('formata em reais com separador de milhar', () => {
@@ -40,5 +47,24 @@ describe('percentual', () => {
 describe('dataExtenso', () => {
   it('escreve a data por extenso em portugues', () => {
     expect(dataExtenso(new Date(2026, 7, 18))).toBe('18 de agosto de 2026')
+  })
+})
+
+describe('entrada de moeda', () => {
+  it('extrai o numero de um texto formatado', () => {
+    expect(moedaParaNumero('R$ 1.000.000,00')).toBe('1000000.00')
+    expect(moedaParaNumero('2.500.000,55')).toBe('2500000.55')
+  })
+
+  it('devolve string vazia quando nao ha digito', () => {
+    expect(moedaParaNumero('R$ ')).toBe('')
+    expect(moedaParaNumero('abc')).toBe('')
+  })
+
+  it('monta a mascara a partir dos digitos', () => {
+    // O usuario digita so numeros; os centavos entram da direita para a esquerda
+    expect(numeroParaMascara('100000000')).toBe('1.000.000,00')
+    expect(numeroParaMascara('5')).toBe('0,05')
+    expect(numeroParaMascara('')).toBe('')
   })
 })

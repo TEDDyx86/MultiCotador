@@ -12,27 +12,15 @@
   --color-cofre-alerta: #F0A722;
 }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/*
+ * O boilerplate do create-next-app trazia aqui um `body { background; color }`
+ * fora de qualquer cascade layer, mais o par --background/--foreground e o
+ * @media (prefers-color-scheme: dark) que os redefinia. Regra sem layer sempre
+ * vence regra em layer, entao aquele body sobrescrevia as utilitarias do
+ * Tailwind (que vivem em @layer utilities) e a tela abria branca com Arial,
+ * ignorando o bg-cofre-fundo do <body>. O tema agora e so este arquivo.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
