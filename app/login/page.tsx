@@ -65,7 +65,7 @@ export default function Login() {
           </p>
         </div>
 
-        <label htmlFor="senha" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-cofre-suave">
+        <label htmlFor="senha" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-cofre-suave">
           Senha de acesso
         </label>
         <input

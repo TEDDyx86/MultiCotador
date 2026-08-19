@@ -248,7 +248,7 @@ export function FormularioCotacao({ aoResultado }: Props) {
            * dois ultimos caiam desalinhados numa segunda fileira — quatro
            * valores equivalentes precisam parecer equivalentes.
            */}
-          <p className="mt-3 mb-1.5 text-xs text-cofre-suave/80">Atalhos</p>
+          <p className="mt-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-cofre-suave">Atalhos</p>
           <div className="grid grid-cols-4 gap-1.5">
             {ATALHOS_CAPITAL.map((atalho) => (
               <button

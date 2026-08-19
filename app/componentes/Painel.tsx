@@ -72,9 +72,12 @@ export function Painel() {
                     />
                   </svg>
                 </div>
-                <h3 className="text-base font-bold text-cofre-texto">
+                {/* h2 e nao h3: este bloco ocupa o lugar do resultado, que
+                    tambem abre em h2. Com h3, a leitura pulava de h1 direto
+                    para h3 e o nivel sumia para quem navega por cabecalhos. */}
+                <h2 className="text-base font-bold text-cofre-texto">
                   Simulação Comparativa Whole Life
-                </h3>
+                </h2>
                 <p className="mt-2 text-xs leading-relaxed text-cofre-suave">
                   Preencha os dados do cliente no formulário ao lado para calcular o ranking entre as 4 seguradoras e visualizar as métricas de quitação em 10 anos.
                 </p>
