@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { BotaoSair } from './BotaoSair'
 
 export function Cabecalho() {
   return (
@@ -26,13 +27,17 @@ export function Cabecalho() {
             className="h-7 w-auto sm:h-8"
           />
         </div>
-        <div className="text-right">
-          <p className="text-xs font-semibold uppercase tracking-wider text-cofre-acento">
-            Planejamento Patrimonial
-          </p>
-          <p className="text-xs uppercase tracking-wider text-cofre-suave">
-            e Sucessório
-          </p>
+        <div className="flex items-center gap-4">
+          {/* A assinatura some no celular para o botao de sair nao competir com ela */}
+          <div className="hidden text-right sm:block">
+            <p className="text-xs font-semibold uppercase tracking-wider text-cofre-acento">
+              Planejamento Patrimonial
+            </p>
+            <p className="text-xs uppercase tracking-wider text-cofre-suave">
+              e Sucessório
+            </p>
+          </div>
+          <BotaoSair />
         </div>
       </div>
     </header>
