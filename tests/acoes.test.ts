@@ -60,3 +60,31 @@ describe('acao de cotacao', () => {
     expect(mag.breakevenReal).toBeNull()
   })
 })
+
+describe('acao de cotacao — capital nos extremos', () => {
+  it('recusa capital que produz aporte arredondado para zero', async () => {
+    // Com um centavo de capital o aporte sai R$ 0,00: correto na aritmetica,
+    // e ainda assim um seguro de graca anunciado ao cliente.
+    const r = await cotarComparativo({ sexo: 'M', idade: 50, capital: '0.01' })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.erro).toMatch(/baixo demais/i)
+  })
+
+  it('recusa capital cujo aporte fica abaixo de um real por ano', async () => {
+    const r = await cotarComparativo({ sexo: 'M', idade: 50, capital: '1' })
+    expect(r.ok).toBe(false)
+  })
+
+  it('aceita capital pequeno mas com aporte significativo', async () => {
+    const r = await cotarComparativo({ sexo: 'M', idade: 50, capital: '100' })
+    expect(r.ok).toBe(true)
+  })
+
+  it('aceita capital muito alto', async () => {
+    const r = await cotarComparativo({ sexo: 'M', idade: 50, capital: '999999999.99' })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.comparativo).toHaveLength(4)
+  })
+})

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'motion/react'
 import type { Resultado as TipoResultado } from '@/app/acoes'
@@ -25,6 +26,7 @@ export function Resultado({
 }) {
   const [gerando, setGerando] = useState(false)
   const [erroPdf, setErroPdf] = useState('')
+  const router = useRouter()
   const nome = dados?.nome ?? ''
   if (!resultado.ok) {
     return (
@@ -76,9 +78,17 @@ export function Resultado({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dados),
       })
+      // A sessao dura oito horas e pode vencer com a tela aberta. Mostrar
+      // "sessao expirada" ao lado de um resultado que continua na tela deixaria
+      // o corretor sem saber o que fazer; levar para o login resolve.
+      if (resposta.status === 401) {
+        router.replace('/login')
+        router.refresh()
+        return
+      }
       if (!resposta.ok) {
         const corpo = await resposta.json().catch(() => ({}))
-        setErroPdf(corpo.erro ?? 'Nao foi possivel gerar o documento.')
+        setErroPdf(corpo.erro ?? 'Não foi possível gerar o documento.')
         return
       }
       // O PDF vem como binario; o download e disparado por um link temporario.
@@ -92,7 +102,7 @@ export function Resultado({
       link.remove()
       URL.revokeObjectURL(url)
     } catch {
-      setErroPdf('Falha de conexao ao gerar o documento.')
+      setErroPdf('Falha de conexão ao gerar o documento. Tente novamente.')
     } finally {
       setGerando(false)
     }

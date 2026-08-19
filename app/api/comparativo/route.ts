@@ -60,6 +60,16 @@ export async function POST(requisicao: Request) {
     )
   }
 
+  // Mesmo piso da tela: um aporte que arredonda para R$ 0,00 viraria um seguro
+  // de graca impresso num documento assinado. A rota valida por conta propria
+  // porque nada garante que a chamada veio da tela.
+  if (comparativo.linhas.every((l) => l.aporteAnual.lessThan(1))) {
+    return NextResponse.json(
+      { erro: 'Capital baixo demais para gerar o comparativo.' },
+      { status: 422 },
+    )
+  }
+
   const html = montarHtml({
     nome,
     idade,

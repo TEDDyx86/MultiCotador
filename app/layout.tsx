@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Movimento } from "./componentes/Movimento";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           className="pointer-events-none fixed inset-0 z-0 bg-monogram-vignette mix-blend-screen"
         />
         <div className="relative z-10 flex min-h-full flex-col">
-          {children}
+          <Movimento>{children}</Movimento>
         </div>
       </body>
     </html>

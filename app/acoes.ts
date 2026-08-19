@@ -74,6 +74,26 @@ export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
     }
   }
 
+  /*
+   * Um capital minusculo produz aporte que arredonda para R$ 0,00 -- com um
+   * centavo de capital o comparativo anuncia um seguro de graca. E o resultado
+   * aritmetico correto da tabela, e mesmo assim uma afirmacao falsa num
+   * documento entregue ao cliente.
+   *
+   * O piso nao vem de regra de seguradora: o capital minimo de cada uma ainda
+   * esta por confirmar (docs/PENDENCIAS.md). O corte e apenas onde a conta
+   * perde sentido.
+   */
+  if (cotacoes.every((c) => c.premioAnual.lessThan(1))) {
+    return {
+      ok: false,
+      erro:
+        'Capital baixo demais para uma simulação com significado: o aporte fica ' +
+        'abaixo de R$ 1,00 por ano. Cada seguradora ainda define o próprio ' +
+        'capital mínimo de aceitação.',
+    }
+  }
+
   const comp = montarComparativo(repo, entrada.sexo, entrada.idade, capital)
 
   return {
