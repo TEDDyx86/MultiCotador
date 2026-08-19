@@ -93,15 +93,22 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
                   <div className="pointer-events-none absolute -right-6 -bottom-6 h-24 w-24 rounded-full bg-cofre-acento/10 blur-xl" />
                 </>
               )}
-              <div className="mb-3.5 flex items-start justify-between gap-2">
+              {/*
+               * A posicao e o selo ficam em linhas separadas de proposito.
+               * Juntos, "1º • Recomendada" ocupava 117px de um card de 165px e
+               * empurrava a logo para fora do overflow-hidden — a marca da
+               * seguradora recomendada aparecia cortada, justo no card de maior
+               * destaque. Separados, o layout aguenta qualquer largura.
+               */}
+              <div className="mb-2 flex items-start justify-between gap-2">
                 <span
-                  className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${
+                  className={`inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wider ${
                     ehPrimeiro
                       ? 'bg-cofre-acento/20 text-cofre-acento'
                       : 'bg-cofre-fundo text-cofre-suave'
                   }`}
                 >
-                  {indice + 1}º{ehPrimeiro ? ' • Recomendada' : ''}
+                  {indice + 1}º
                 </span>
                 <span className="shrink-0 rounded-md bg-white/95 px-2 py-1 shadow-sm">
                   <Image
@@ -113,6 +120,11 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
                   />
                 </span>
               </div>
+              {ehPrimeiro && (
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cofre-acento">
+                  Recomendada
+                </p>
+              )}
               <p className="text-xl font-bold tracking-tight text-cofre-texto">
                 <ValorAnimado texto={linha.aporteAnual} />
               </p>
