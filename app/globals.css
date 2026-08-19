@@ -49,3 +49,30 @@
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 85%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 85%);
 }
+
+/*
+ * Alvos de toque.
+ *
+ * A regra olha o metodo de entrada, nao a largura: um notebook com tela sensivel
+ * ao toque precisa do mesmo alvo generoso que um telefone, e um telefone com
+ * mouse bluetooth nao precisa. Por isso `pointer: coarse` em vez de breakpoint.
+ *
+ * 44px e o piso do WCAG 2.5.5. O `min-height` sozinho nao bastaria em botoes que
+ * ja tem altura definida por padding, entao o alvo cresce pelo padding vertical
+ * quando o conteudo e menor que isso.
+ */
+@media (pointer: coarse) {
+  button,
+  a[role='button'],
+  summary,
+  input:not([type='hidden']),
+  select {
+    min-height: 44px;
+  }
+
+  /* Botoes textuais discretos (Limpar, Sair) mantem o tamanho visual do rotulo
+     e ganham area clicavel ao redor, sem virarem blocos pesados na interface. */
+  button:where(.alvo-discreto) {
+    padding-inline: 0.75rem;
+  }
+}

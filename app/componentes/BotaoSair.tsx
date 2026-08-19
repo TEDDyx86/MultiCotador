@@ -35,7 +35,7 @@ export function BotaoSair() {
       type="button"
       onClick={sair}
       disabled={saindo}
-      className="inline-flex items-center gap-1.5 rounded-md border border-cofre-borda px-2.5 py-1.5
+      className="alvo-discreto inline-flex items-center gap-1.5 rounded-md border border-cofre-borda px-2.5 py-1.5
                  text-xs font-semibold uppercase tracking-wider text-cofre-suave transition-colors
                  hover:border-cofre-acento/60 hover:text-cofre-acento disabled:opacity-50"
     >

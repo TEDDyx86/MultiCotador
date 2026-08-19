@@ -11,9 +11,16 @@ export function Painel() {
   const [resultado, setResultado] = useState<TipoResultado | null>(null)
   const [dados, setDados] = useState<DadosFormulario | null>(null)
 
+  // O min-w-0 nos dois itens do grid e o que mantem a tela dentro da largura do
+  // aparelho. Item de grid nasce com min-width:auto, que respeita o min-content
+  // do conteudo: a largura minima da tabela comparativa inflava a coluna e
+  // empurrava o formulario junto, dando 306px de rolagem lateral num telefone de
+  // 360px. O overflow-x da tabela nao resolvia sozinho, porque o problema estava
+  // um nivel acima — o item do grid nao conseguia encolher.
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
       <motion.div
+        className="min-w-0"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -26,7 +33,7 @@ export function Painel() {
         />
       </motion.div>
 
-      <div>
+      <div className="min-w-0">
         <AnimatePresence mode="wait">
           {resultado ? (
             <motion.div

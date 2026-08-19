@@ -51,6 +51,21 @@ export function Resultado({
   const algumEstimado = comparativo.some((l) => l.estimada)
   const algumAbaixo = comparativo.some((l) => l.resgateAbaixoDoAportado)
 
+  // Uma unica fonte para a tabela do desktop e a lista do telefone: sao duas
+  // apresentacoes do mesmo quadro, e nao podem divergir quando um criterio mudar.
+  const criterios = [
+    { titulo: 'Aporte anual', valores: comparativo.map((l) => l.aporteAnual) },
+    { titulo: 'Acumulado em 10 anos', valores: comparativo.map((l) => l.aporteAcumulado10a) },
+    { titulo: 'Custo vs capital segurado', valores: comparativo.map((l) => l.custoSobreCapital) },
+    { titulo: 'Resgate no 10º ano', valores: comparativo.map((l) => l.resgate10a) },
+    {
+      titulo: 'Break-even real',
+      valores: comparativo.map((l) =>
+        l.breakevenReal === null ? 'não atinge' : `${l.breakevenReal}º ano`,
+      ),
+    },
+  ]
+
   async function emitirPdf() {
     if (!dados || gerando) return
     setGerando(true)
@@ -117,7 +132,13 @@ export function Resultado({
       )}
 
       {/* Cards de Ranking com Backlight no 1º lugar */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+      {/*
+       * Duas colunas ja no telefone. Empilhados, os quatro cards consumiam uma
+       * tela inteira de rolagem so para responder "quem e mais barato" — que e a
+       * primeira pergunta do corretor. Lado a lado, a comparacao acontece sem
+       * rolar.
+       */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-3.5 lg:grid-cols-4">
         {comparativo.map((linha, indice) => {
           const ehPrimeiro = indice === 0
           return (
@@ -167,11 +188,14 @@ export function Resultado({
                 </span>
               </div>
               {ehPrimeiro && (
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-cofre-acento">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-cofre-acento">
                   Recomendada
                 </p>
               )}
-              <p className="text-xl font-bold tracking-tight text-cofre-texto">
+              {/* O valor nunca parte: "R$ 57.248,94" quebrado em duas linhas se
+                  le como dois numeros. Em duas colunas no telefone o corpo cede
+                  um passo para o numero caber inteiro. */}
+              <p className="whitespace-nowrap text-lg font-bold tracking-tight text-cofre-texto sm:text-xl">
                 <ValorAnimado texto={linha.aporteAnual} />
               </p>
               <p className="mt-1 text-xs text-cofre-suave font-medium">
@@ -182,12 +206,65 @@ export function Resultado({
         })}
       </div>
 
+      {/*
+       * No telefone a tabela vira uma lista por criterio.
+       * Com cinco colunas em 360px sobrava espaco para uma seguradora e meia:
+       * comparar exigia rolar de lado a cada linha e guardar o numero anterior
+       * de cabeca — que e justamente o trabalho que este quadro deveria poupar.
+       * Um criterio por bloco mostra as quatro lado a lado sem rolagem lateral.
+       */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.4 }}
+        className="space-y-2.5 md:hidden"
+      >
+        <h3 className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
+          Quadro Comparativo de Métricas
+        </h3>
+        {criterios.map((criterio) => (
+          <div
+            key={criterio.titulo}
+            className="overflow-hidden rounded-xl border border-cofre-borda bg-cofre-placa"
+          >
+            <p className="border-b border-cofre-borda/70 bg-cofre-placa-clara px-3.5 py-2 text-xs font-semibold text-cofre-suave">
+              {criterio.titulo}
+            </p>
+            <dl className="divide-y divide-cofre-borda/50">
+              {comparativo.map((linha, indice) => (
+                <div key={linha.produtoId} className="flex items-center justify-between px-3.5 py-2.5">
+                  <dt
+                    className={`text-sm ${
+                      indice === 0 ? 'font-semibold text-cofre-acento' : 'text-cofre-texto'
+                    }`}
+                  >
+                    {linha.seguradora}
+                    {indice === 0 && <span className="ml-1.5 text-xs">• recomendada</span>}
+                  </dt>
+                  <dd
+                    className={`whitespace-nowrap tabular-nums ${
+                      criterio.valores[indice] === 'não atinge'
+                        ? 'font-semibold text-cofre-alerta'
+                        : indice === 0
+                          ? 'font-bold text-cofre-acento'
+                          : 'font-medium text-cofre-texto'
+                    }`}
+                  >
+                    {criterio.valores[indice]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </motion.div>
+
       {/* Tabela Comparativa Detalhada com Coluna Fixa */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.4 }}
-        className="overflow-hidden rounded-xl border border-cofre-borda bg-cofre-placa shadow-2xl"
+        className="hidden overflow-hidden rounded-xl border border-cofre-borda bg-cofre-placa shadow-2xl md:block"
       >
         <div className="border-b border-cofre-borda bg-cofre-placa-clara px-4 py-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
@@ -214,40 +291,13 @@ export function Resultado({
               </tr>
             </thead>
             <tbody className="divide-y divide-cofre-borda/50">
-              <Linha titulo="Aporte anual" valores={comparativo.map((l) => l.aporteAnual)} />
-              <Linha
-                titulo="Acumulado em 10 anos"
-                valores={comparativo.map((l) => l.aporteAcumulado10a)}
-              />
-              <Linha
-                titulo="Custo vs capital segurado"
-                valores={comparativo.map((l) => l.custoSobreCapital)}
-              />
-              <Linha
-                titulo="Resgate no 10º ano"
-                valores={comparativo.map((l) => l.resgate10a)}
-              />
-              <tr>
-                <th scope="row" className="sticky left-0 z-10 bg-cofre-placa px-4 py-3.5 text-left font-medium text-cofre-suave shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
-                  Break-even real
-                </th>
-                {comparativo.map((l, idx) => (
-                  <td
-                    key={l.produtoId}
-                    className={`px-4 py-3.5 text-sm tabular-nums ${
-                      idx === 0 ? 'font-semibold text-cofre-acento' : 'text-cofre-texto'
-                    }`}
-                  >
-                    {l.breakevenReal === null ? (
-                      <span className="inline-flex items-center rounded bg-cofre-alerta/15 px-2 py-0.5 text-xs font-semibold text-cofre-alerta">
-                        não atinge
-                      </span>
-                    ) : (
-                      `${l.breakevenReal}º ano`
-                    )}
-                  </td>
-                ))}
-              </tr>
+              {criterios.map((criterio) => (
+                <Linha
+                  key={criterio.titulo}
+                  titulo={criterio.titulo}
+                  valores={criterio.valores}
+                />
+              ))}
             </tbody>
           </table>
         </div>
@@ -325,7 +375,7 @@ export function Resultado({
 
       {/* Lista completa de produtos cotados */}
       <details className="group rounded-xl border border-cofre-borda bg-cofre-placa p-4 transition-all">
-        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-cofre-suave hover:text-cofre-texto flex items-center justify-between">
+        <summary className="-my-1.5 flex cursor-pointer items-center justify-between py-1.5 text-xs font-semibold uppercase tracking-wider text-cofre-suave hover:text-cofre-texto">
           <span>
             {todos.length === 1
               ? 'Ver o único produto cotado'
@@ -368,10 +418,12 @@ function Linha({ titulo, valores }: { titulo: string; valores: string[] }) {
       {valores.map((valor, indice) => (
         <td
           key={indice}
-          className={`px-4 py-3.5 tabular-nums ${
-            indice === 0
-              ? 'font-bold text-cofre-acento'
-              : 'font-medium text-cofre-texto'
+          className={`whitespace-nowrap px-4 py-3.5 tabular-nums ${
+            valor === 'não atinge'
+              ? 'font-semibold text-cofre-alerta'
+              : indice === 0
+                ? 'font-bold text-cofre-acento'
+                : 'font-medium text-cofre-texto'
           }`}
         >
           {valor}

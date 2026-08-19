@@ -98,7 +98,7 @@ export function FormularioCotacao({ aoResultado }: Props) {
         <button
           type="button"
           onClick={limparFormulario}
-          className="text-xs text-cofre-suave hover:text-cofre-acento transition-colors"
+          className="alvo-discreto -mr-3 -my-2 px-3 py-2 text-xs text-cofre-suave transition-colors hover:text-cofre-acento"
         >
           Limpar
         </button>
@@ -242,15 +242,21 @@ export function FormularioCotacao({ aoResultado }: Props) {
           </label>
           <CampoMoeda id="capital" valor={capital} aoMudar={setCapital} />
 
-          {/* Atalhos rápidos de capital */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-cofre-suave/80 mr-1">Atalhos:</span>
+          {/*
+           * Grade de quatro colunas em vez de linha que embrulha. Com o rotulo
+           * dentro da mesma linha, "Atalhos:" comia a largura de um atalho e os
+           * dois ultimos caiam desalinhados numa segunda fileira — quatro
+           * valores equivalentes precisam parecer equivalentes.
+           */}
+          <p className="mt-3 mb-1.5 text-xs text-cofre-suave/80">Atalhos</p>
+          <div className="grid grid-cols-4 gap-1.5">
             {ATALHOS_CAPITAL.map((atalho) => (
               <button
                 key={atalho.valor}
                 type="button"
                 onClick={() => setCapital(atalho.valor)}
-                className={`rounded border px-2 py-1 text-xs transition-all ${
+                aria-pressed={capital === atalho.valor}
+                className={`rounded border px-1 py-1.5 text-xs transition-all ${
                   capital === atalho.valor
                     ? 'border-cofre-acento bg-cofre-acento/15 font-semibold text-cofre-acento'
                     : 'border-cofre-borda bg-[#061224] text-cofre-suave hover:border-cofre-borda/80 hover:text-cofre-texto'
@@ -267,9 +273,14 @@ export function FormularioCotacao({ aoResultado }: Props) {
         type="submit"
         disabled={!podeEnviar || processando}
         whileTap={{ scale: 0.985 }}
+        /* O anel de foco e escuro sobre o ouro do botao, com deslocamento: era o
+           unico dos 14 focaveis que nao mudava nada ao receber foco de teclado —
+           justamente a acao principal da tela. */
         className="relative mt-6 w-full overflow-hidden rounded-md bg-gradient-to-r from-cofre-acento to-cofre-acento-hover py-3.5
                    text-sm font-bold uppercase tracking-wider text-[#061224] shadow-lg transition-all
-                   hover:brightness-105 active:brightness-95 disabled:cursor-not-allowed disabled:opacity-35"
+                   hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2
+                   focus-visible:outline-cofre-texto active:brightness-95
+                   disabled:cursor-not-allowed disabled:opacity-35"
       >
         {processando && (
           <motion.span
