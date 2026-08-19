@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import { motion } from 'motion/react'
 import type { Resultado as TipoResultado } from '@/app/acoes'
+import type { DadosFormulario } from '@/lib/dominio/tipos'
 import { ValorAnimado } from './ValorAnimado'
 
 const entrada = {
@@ -14,7 +16,16 @@ const entrada = {
   }),
 }
 
-export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome: string }) {
+export function Resultado({
+  resultado,
+  dados,
+}: {
+  resultado: TipoResultado
+  dados: DadosFormulario | null
+}) {
+  const [gerando, setGerando] = useState(false)
+  const [erroPdf, setErroPdf] = useState('')
+  const nome = dados?.nome ?? ''
   if (!resultado.ok) {
     return (
       <div
@@ -40,8 +51,36 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
   const algumEstimado = comparativo.some((l) => l.estimada)
   const algumAbaixo = comparativo.some((l) => l.resgateAbaixoDoAportado)
 
-  function emitirPdf() {
-    window.print()
+  async function emitirPdf() {
+    if (!dados || gerando) return
+    setGerando(true)
+    setErroPdf('')
+    try {
+      const resposta = await fetch('/api/comparativo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados),
+      })
+      if (!resposta.ok) {
+        const corpo = await resposta.json().catch(() => ({}))
+        setErroPdf(corpo.erro ?? 'Nao foi possivel gerar o documento.')
+        return
+      }
+      // O PDF vem como binario; o download e disparado por um link temporario.
+      const blob = await resposta.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Comparativo-WholeLife-${nome.replace(/[^\p{L}\p{N}]+/gu, '-')}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setErroPdf('Falha de conexao ao gerar o documento.')
+    } finally {
+      setGerando(false)
+    }
   }
 
   return (
@@ -60,15 +99,22 @@ export function Resultado({ resultado, nome }: { resultado: TipoResultado; nome:
           <button
             type="button"
             onClick={emitirPdf}
-            className="inline-flex items-center gap-2 rounded-md border border-cofre-acento/50 bg-cofre-acento/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-cofre-acento transition-all hover:bg-cofre-acento hover:text-[#061224] shadow-sm"
+            disabled={!dados || gerando}
+            className="inline-flex items-center gap-2 rounded-md border border-cofre-acento/50 bg-cofre-acento/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-cofre-acento transition-all hover:bg-cofre-acento hover:text-[#061224] shadow-sm disabled:opacity-40 disabled:hover:bg-cofre-acento/10 disabled:hover:text-cofre-acento"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
-            Exportar PDF
+            {gerando ? 'Gerando...' : 'Exportar PDF'}
           </button>
         </div>
       </div>
+
+      {erroPdf && (
+        <p role="alert" className="rounded-md border border-cofre-perigo/40 bg-cofre-perigo/10 px-3 py-2 text-xs text-cofre-perigo">
+          {erroPdf}
+        </p>
+      )}
 
       {/* Cards de Ranking com Backlight no 1º lugar */}
       <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">

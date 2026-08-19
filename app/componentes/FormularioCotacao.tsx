@@ -11,7 +11,7 @@ import {
   dataBrasileiraParaDate,
 } from '@/lib/formato'
 import { CampoMoeda } from './CampoMoeda'
-import type { Sexo } from '@/lib/dominio/tipos'
+import type { DadosFormulario, Sexo } from '@/lib/dominio/tipos'
 
 const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)']
 const REGIMES = [
@@ -35,7 +35,7 @@ const campo =
   'focus:border-cofre-acento focus:ring-1 focus:ring-cofre-acento/40'
 
 interface Props {
-  aoResultado: (resultado: Resultado | null, nome: string) => void
+  aoResultado: (resultado: Resultado | null, dados: DadosFormulario | null) => void
 }
 
 export function FormularioCotacao({ aoResultado }: Props) {
@@ -63,7 +63,7 @@ export function FormularioCotacao({ aoResultado }: Props) {
     setDataTexto('')
     setProfissao('')
     setCapital('100000000')
-    aoResultado(null, '')
+    aoResultado(null, null)
   }
 
   function enviar(evento: React.FormEvent) {
@@ -72,7 +72,17 @@ export function FormularioCotacao({ aoResultado }: Props) {
 
     iniciarTransicao(async () => {
       const valor = moedaParaNumero(numeroParaMascara(capital))
-      aoResultado(await cotarComparativo({ sexo, idade, capital: valor }), nome.trim())
+      const dados: DadosFormulario = {
+        nome: nome.trim(),
+        sexo,
+        idade,
+        capital: valor,
+        estadoCivil,
+        // O regime so descreve a situacao de quem e casado ou tem uniao estavel.
+        regimeBens: estadoCivil === 'Casado(a)' || estadoCivil === 'União estável' ? regimeBens : null,
+        profissao: profissao.trim(),
+      }
+      aoResultado(await cotarComparativo({ sexo, idade, capital: valor }), dados)
     })
   }
 

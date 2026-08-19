@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'motion/react'
 import { FormularioCotacao } from './FormularioCotacao'
 import { Resultado } from './Resultado'
 import type { Resultado as TipoResultado } from '@/app/acoes'
+import type { DadosFormulario } from '@/lib/dominio/tipos'
 
 export function Painel() {
   const [resultado, setResultado] = useState<TipoResultado | null>(null)
-  const [nome, setNome] = useState('')
+  const [dados, setDados] = useState<DadosFormulario | null>(null)
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
@@ -18,9 +19,9 @@ export function Painel() {
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         <FormularioCotacao
-          aoResultado={(r, n) => {
+          aoResultado={(r, d) => {
             setResultado(r)
-            setNome(n)
+            setDados(d)
           }}
         />
       </motion.div>
@@ -35,7 +36,7 @@ export function Painel() {
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
             >
-              <Resultado resultado={resultado} nome={nome} />
+              <Resultado resultado={resultado} dados={dados} />
             </motion.div>
           ) : (
             <motion.div

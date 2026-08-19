@@ -58,3 +58,19 @@ export interface DadosCliente {
   regimeBens: string | null
   profissao: string
 }
+
+/**
+ * Dados do cliente que viajam do formulario ate o documento.
+ * Nome, estado civil, regime de bens e profissao nao afetam o calculo — sao
+ * identificacao e contexto sucessorio impressos no comparativo.
+ */
+export interface DadosFormulario {
+  nome: string
+  sexo: Sexo
+  idade: number
+  /** Capital em formato decimal, ex.: "1000000.00". */
+  capital: string
+  estadoCivil: string
+  regimeBens: string | null
+  profissao: string
+}
