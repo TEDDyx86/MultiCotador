@@ -113,24 +113,24 @@ export function montarHtml(dados: DadosDocumento): string {
                 display:flex; align-items:center; justify-content:space-between;
                 padding:0 39.7pt; }
   .faixa-topo img { height:26pt; }
-  .faixa-topo .tag { color:#7FC4FF; font-size:7pt; font-weight:700; letter-spacing:.9pt;
+  .faixa-topo .tag { color:#7FC4FF; font-size:7.5pt; font-weight:700; letter-spacing:.9pt;
                      text-align:right; line-height:1.5; text-transform:uppercase; }
 
   .corpo { padding:0 39.7pt; flex:1; }
 
-  h1 { color:${NAVY}; font-size:17pt; font-weight:700; letter-spacing:-.2pt; margin-top:10pt; }
+  h1 { color:${NAVY}; font-size:18pt; font-weight:700; letter-spacing:-.2pt; margin-top:10pt; }
   .chamada { font-size:8.5pt; color:${TINTA_SUAVE}; margin-top:5pt; }
   .chamada b { color:${TINTA}; }
 
   .perfil { margin-top:9pt; background:${CINZA_FAIXA}; border-left:2.2pt solid ${AZUL};
             height:37.9pt; flex-shrink:0; display:flex; align-items:center; }
   .perfil div { padding:0 12pt; }
-  .perfil dt { font-size:6pt; font-weight:700; color:#8A8A8A; letter-spacing:.55pt;
+  .perfil dt { font-size:7pt; font-weight:700; color:#8A8A8A; letter-spacing:.55pt;
                text-transform:uppercase; }
   .perfil dd { font-size:8.5pt; font-weight:700; color:${NAVY}; margin-top:2.5pt; }
 
   h2 { color:${NAVY}; font-size:9.5pt; font-weight:700; letter-spacing:.35pt;
-       text-transform:uppercase; margin-top:11pt; padding-bottom:3.5pt; }
+       text-transform:uppercase; margin-top:9pt; padding-bottom:3pt; }
   .regua { height:1pt; background:${CINZA_BORDA}; position:relative; margin-bottom:9pt; }
   .regua::before { content:''; position:absolute; left:0; top:0; width:78pt; height:1pt;
                    background:${AZUL}; }
@@ -139,33 +139,33 @@ export function montarHtml(dados: DadosDocumento): string {
   .card { flex:1; border:.8pt solid ${CINZA_BORDA}; border-radius:3pt; padding:7pt 6pt;
           text-align:center; }
   .card.rec { border:1.2pt solid ${AZUL}; background:${AZUL_CLARO}; }
-  .card .pos { font-size:6pt; font-weight:700; color:#9A9A9A; letter-spacing:.5pt;
+  .card .pos { font-size:7pt; font-weight:700; color:#9A9A9A; letter-spacing:.5pt;
                text-transform:uppercase; }
   .card.rec .pos { color:${AZUL}; }
   .card .marca { font-size:11pt; font-weight:700; color:${NAVY}; margin-top:5pt; }
-  .card .valor { font-size:9pt; font-weight:700; color:${TINTA}; margin-top:6pt; }
-  .card .delta { font-size:6.5pt; color:${TINTA_SUAVE}; margin-top:4pt; }
+  .card .valor { font-size:9.5pt; font-weight:700; color:${TINTA}; margin-top:6pt; }
+  .card .delta { font-size:7pt; color:${TINTA_SUAVE}; margin-top:4pt; }
   .card.rec .delta { color:${AZUL}; font-weight:700; }
 
-  table { width:100%; border-collapse:collapse; font-size:7.5pt; }
+  table { width:100%; border-collapse:collapse; font-size:8.5pt; }
   thead th { background:#FFFFFF; border-bottom:.8pt solid ${CINZA_BORDA}; padding:6pt 5pt;
              font-weight:700; color:${TINTA}; text-align:center; vertical-align:bottom; }
   thead th:first-child { text-align:left; color:${TINTA_SUAVE}; font-weight:700; }
   thead th.col-rec { background:${NAVY}; color:#FFFFFF; border-radius:2pt 2pt 0 0; }
-  .rec-tag { font-size:5.5pt; font-weight:700; color:#7FC4FF; letter-spacing:.5pt;
+  .rec-tag { font-size:6.5pt; font-weight:700; color:#7FC4FF; letter-spacing:.5pt;
              text-transform:uppercase; }
   tbody th { text-align:left; font-weight:700; padding:4.6pt 5pt; color:${TINTA}; }
   tbody td { text-align:center; padding:4.6pt 5pt; }
   tbody td.destaque { background:${AZUL_CLARO}; font-weight:700; color:${NAVY}; }
   tbody tr { border-bottom:.6pt solid ${CINZA_BORDA}; }
 
-  .preservado { margin-top:11pt; height:70pt; flex-shrink:0; border-radius:3pt; display:flex;
+  .preservado { margin-top:9pt; height:68pt; flex-shrink:0; border-radius:3pt; display:flex;
                 align-items:center; background:linear-gradient(100deg,${NAVY} 0%,#0092FF 130%); }
   .preservado .esq { width:190pt; padding:0 16pt; color:#FFFFFF; }
-  .preservado .rot { font-size:7pt; letter-spacing:1pt; text-transform:uppercase; color:#BBD8FF; }
-  .preservado .num { font-size:19pt; font-weight:700; margin-top:5pt; }
+  .preservado .rot { font-size:7.5pt; letter-spacing:1pt; text-transform:uppercase; color:#BBD8FF; }
+  .preservado .num { font-size:17pt; font-weight:700; margin-top:5pt; }
   .preservado .dir { flex:1; background:#FFFFFF; margin:8pt 16pt 8pt 0; border-radius:2pt;
-                     padding:9pt 11pt; font-size:7.5pt; line-height:1.55; color:${TINTA}; }
+                     padding:9pt 11pt; font-size:8pt; line-height:1.55; color:${TINTA}; }
   .preservado .dir b { color:${AZUL}; }
 
   .caracteristicas { background:${CINZA_FUNDO}; padding:7pt; display:flex; flex-wrap:wrap;
@@ -174,19 +174,19 @@ export function montarHtml(dados: DadosDocumento): string {
                          border-left:1.8pt solid ${AZUL}; border-top:.6pt solid ${CINZA_BORDA};
                          border-right:.6pt solid ${CINZA_BORDA};
                          border-bottom:.6pt solid ${CINZA_BORDA}; padding:5pt 8pt; }
-  .caracteristicas h3 { font-size:7.5pt; font-weight:700; color:${NAVY}; }
-  .caracteristicas p { font-size:6.8pt; color:${TINTA_SUAVE}; margin-top:2pt; line-height:1.36; }
+  .caracteristicas h3 { font-size:8pt; font-weight:700; color:${NAVY}; }
+  .caracteristicas p { font-size:7pt; color:${TINTA_SUAVE}; margin-top:2pt; line-height:1.36; }
 
-  .observacoes { margin-top:8pt; background:${CINZA_FAIXA}; border-left:2.2pt solid ${CINZA_BARRA};
-                 padding:6pt 11pt; }
-  .observacoes h4 { font-size:6.5pt; font-weight:700; letter-spacing:.5pt; text-transform:uppercase;
-                    color:${TINTA}; margin-bottom:4pt; }
-  .observacoes li { font-size:6.5pt; color:${TINTA_SUAVE}; list-style:none; line-height:1.38;
+  .observacoes { margin-top:6pt; background:${CINZA_FAIXA}; border-left:2.2pt solid ${CINZA_BARRA};
+                 padding:5pt 11pt; }
+  .observacoes h4 { font-size:7pt; font-weight:700; letter-spacing:.5pt; text-transform:uppercase;
+                    color:${TINTA}; margin-bottom:3pt; }
+  .observacoes li { font-size:7pt; color:${TINTA_SUAVE}; list-style:none; line-height:1.3;
                     padding-left:6pt; position:relative; }
   .observacoes li::before { content:'•'; position:absolute; left:0; color:${AZUL}; }
   .observacoes li b { color:${TINTA}; }
 
-  .assinatura { text-align:center; margin-top:6pt; padding-bottom:2pt; }
+  .assinatura { text-align:center; margin-top:4pt; padding-bottom:0; }
   /* A logo RT do projeto e branca, para o tema escuro da tela. Aqui ela cai
      sobre papel branco, entao vira tinta. brightness(0) preserva o recorte
      do monograma sem precisar de um segundo arquivo. */
@@ -219,7 +219,7 @@ export function montarHtml(dados: DadosDocumento): string {
       <div><dt>Vigência</dt><dd>Vitalícia</dd></div>
       <div><dt>Estratégia</dt><dd>Whole Life</dd></div>
     </dl>
-    ${complemento ? `<p class="chamada" style="margin-top:6pt;font-size:7pt">${escapar(complemento)}</p>` : ''}
+    ${complemento ? `<p class="chamada" style="margin-top:6pt;font-size:7.5pt">${escapar(complemento)}</p>` : ''}
 
     <h2>Ranking por aporte anual</h2><div class="regua"></div>
     <div class="cards">
