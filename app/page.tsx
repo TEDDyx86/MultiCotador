@@ -9,7 +9,7 @@ export default function Pagina() {
         <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-cofre-texto sm:text-2xl">
-              Análise Whole Life 10
+              Análise Whole Life
             </h1>
             <p className="mt-0.5 text-xs text-cofre-suave">
               Comparativo de aporte, valor de resgate e eficiência patrimonial entre seguradoras
