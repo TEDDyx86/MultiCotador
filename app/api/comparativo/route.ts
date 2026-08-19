@@ -99,9 +99,29 @@ export async function POST(requisicao: Request) {
   try {
     pdf = await gerarPdf(html)
   } catch (erro) {
-    console.error('[comparativo] falha ao gerar o PDF', erro)
+    /*
+     * O log carrega a causa real; a resposta ao cliente nao. Stack trace na tela
+     * expoe caminhos do servidor sem ajudar o corretor.
+     *
+     * A mensagem curta identifica as duas falhas que so acontecem em producao e
+     * antes chegavam como "tente novamente", sem pista nenhuma: navegador que
+     * nao abre (binario ausente do bundle) e arquivo que nao existe no
+     * filesystem da funcao.
+     */
+    const causa = erro instanceof Error ? erro.message : String(erro)
+    console.error('[comparativo] falha ao gerar o PDF:', causa, erro)
+
+    const naoAbriuNavegador = /Failed to launch|executablePath|spawn|ENOENT.*chromium/i.test(causa)
+    const arquivoAusente = /ENOENT/i.test(causa)
+
     return NextResponse.json(
-      { erro: 'Nao foi possivel gerar o documento. Tente novamente.' },
+      {
+        erro: naoAbriuNavegador
+          ? 'O gerador de documentos não iniciou no servidor. Avise o suporte técnico.'
+          : arquivoAusente
+            ? 'Um recurso do documento não foi encontrado no servidor. Avise o suporte técnico.'
+            : 'Não foi possível gerar o documento. Tente novamente.',
+      },
       { status: 500 },
     )
   }

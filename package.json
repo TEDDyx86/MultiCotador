@@ -8,7 +8,9 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dados": "python pipeline/gerar_dados.py && python pipeline/gerar_gabarito.py"
+    "dados": "python pipeline/gerar_dados.py && python pipeline/gerar_gabarito.py",
+    "verificar:pdf": "node scripts/verificar-bundle-pdf.mjs",
+    "postbuild": "node scripts/verificar-bundle-pdf.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",
