@@ -5,8 +5,21 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'motion/react'
 import type { Resultado as TipoResultado } from '@/app/acoes'
-import type { DadosFormulario } from '@/lib/dominio/tipos'
+import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
 import { ValorAnimado } from './ValorAnimado'
+
+/*
+ * Cada marca chega num PNG de proporcao muito diferente: a MetLife e uma faixa
+ * (4096x880), a Prudential e quase quadrada (300x231). Com uma altura unica para
+ * todas, a MetLife ocupava o triplo da largura das outras e a Prudential
+ * encolhia ate o nome ficar ilegivel. A caixa e fixa e a altura de cada logo e
+ * calibrada para que as quatro pesem o mesmo aos olhos.
+ */
+const ALTURA_LOGO: Record<string, string> = {
+  MetLife: 'max-h-3',
+  Prudential: 'max-h-6',
+}
+const ALTURA_LOGO_PADRAO = 'max-h-5'
 
 const entrada = {
   oculto: { opacity: 0, y: 12 },
@@ -26,6 +39,7 @@ export function Resultado({
 }) {
   const [gerando, setGerando] = useState(false)
   const [erroPdf, setErroPdf] = useState('')
+  const [visao, setVisao] = useState<Visao>('nominal')
   const router = useRouter()
   const nome = dados?.nome ?? ''
   if (!resultado.ok) {
@@ -49,14 +63,30 @@ export function Resultado({
     )
   }
 
-  const { comparativo, todos, indisponiveis, valorPreservado } = resultado
+  const { todos, indisponiveis, taxaIpca } = resultado
+  const projetada = visao === 'ipca'
+
+  /*
+   * As duas visoes chegaram juntas do servidor, entao alternar e so trocar de
+   * lista — sem espera e sem nova ida ao servidor no meio de uma reuniao.
+   */
+  const comparativo = projetada ? resultado.projetado : resultado.comparativo
+  const valorPreservado = projetada
+    ? resultado.valorPreservadoProjetado
+    : resultado.valorPreservado
+
   const algumEstimado = comparativo.some((l) => l.estimada)
   const algumAbaixo = comparativo.some((l) => l.resgateAbaixoDoAportado)
 
   // Uma unica fonte para a tabela do desktop e a lista do telefone: sao duas
   // apresentacoes do mesmo quadro, e nao podem divergir quando um criterio mudar.
   const criterios = [
-    { titulo: 'Aporte anual', valores: comparativo.map((l) => l.aporteAnual) },
+    {
+      // O aporte anual e sempre o do primeiro ano: e o valor contratado hoje,
+      // e o que muda com a correcao e o acumulado, nao a primeira parcela.
+      titulo: projetada ? 'Aporte anual (1º ano)' : 'Aporte anual',
+      valores: comparativo.map((l) => l.aporteAnual),
+    },
     { titulo: 'Acumulado em 10 anos', valores: comparativo.map((l) => l.aporteAcumulado10a) },
     { titulo: 'Custo vs capital segurado', valores: comparativo.map((l) => l.custoSobreCapital) },
     { titulo: 'Resgate no 10º ano', valores: comparativo.map((l) => l.resgate10a) },
@@ -76,7 +106,9 @@ export function Resultado({
       const resposta = await fetch('/api/comparativo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados),
+        // O documento sai na visao que esta na tela: o corretor imprime o que
+        // acabou de mostrar ao cliente, e nao uma terceira versao.
+        body: JSON.stringify({ ...dados, visao }),
       })
       // A sessao dura oito horas e pode vencer com a tela aberta. Mostrar
       // "sessao expirada" ao lado de um resultado que continua na tela deixaria
@@ -112,11 +144,17 @@ export function Resultado({
     <div className="space-y-6">
       {/* Header do Estudo com Botão de Ação */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-cofre-borda/60 pb-3.5">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
+        <div className="min-w-0">
+          <span className="text-xs font-bold uppercase tracking-wider text-cofre-suave">
             Resultado Comparativo
           </span>
-          <h2 className="text-lg font-bold text-cofre-texto">
+          {/* Uma linha so: com o nome quebrando, o titulo empurrava o botao de
+              exportar para baixo e o cabecalho do estudo mudava de altura a cada
+              cliente. O `title` guarda o nome inteiro quando ele nao couber. */}
+          <h2
+            className="truncate text-lg font-bold text-cofre-texto"
+            title={nome || undefined}
+          >
             {nome ? `Estudo para ${nome}` : 'Ranking por aporte anual'}
           </h2>
         </div>
@@ -125,7 +163,9 @@ export function Resultado({
             type="button"
             onClick={emitirPdf}
             disabled={!dados || gerando}
-            className="inline-flex items-center gap-2 rounded-md border border-cofre-acento/50 bg-cofre-acento/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-cofre-acento transition-all hover:bg-cofre-acento hover:text-[#061224] shadow-sm disabled:opacity-40 disabled:hover:bg-cofre-acento/10 disabled:hover:text-cofre-acento"
+            /* O hover so amplia. Antes ele trocava fundo e texto de cor, e o
+               botao mudava de identidade a cada passagem do mouse. */
+            className="realce-hover inline-flex shrink-0 items-center gap-2 rounded-md border border-cofre-acento/50 bg-cofre-acento/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-cofre-acento shadow-sm disabled:opacity-40"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -140,6 +180,47 @@ export function Resultado({
           {erroPdf}
         </p>
       )}
+
+      {/*
+       * Interruptor de correcao pelo IPCA.
+       *
+       * `role="switch"` e nao dois botoes: e uma chave de liga e desliga, e quem
+       * navega por teclado precisa ouvir isso. A ressalva ao lado nao e enfeite
+       * — sem ela o cliente le "R$ 891 mil de resgate" sem saber que e moeda de
+       * dez anos a frente.
+       */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={projetada}
+          onClick={() => setVisao(projetada ? 'nominal' : 'ipca')}
+          className="inline-flex shrink-0 items-center gap-3 rounded-lg border border-cofre-borda bg-cofre-placa px-3.5 py-2 text-left transition-colors hover:border-cofre-borda/70"
+        >
+          <span
+            aria-hidden
+            className={`relative h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${
+              projetada ? 'bg-cofre-acento' : 'bg-cofre-borda'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 h-4 w-4 rounded-full bg-cofre-texto shadow transition-transform duration-200 ${
+                projetada ? 'translate-x-4.5' : 'translate-x-0.5'
+              }`}
+            />
+          </span>
+          <span className="text-xs font-semibold text-cofre-texto">
+            Corrigir por IPCA
+            <span className="ml-1 font-normal text-cofre-suave">{taxaIpca} a.a.</span>
+          </span>
+        </button>
+
+        <p className="text-xs leading-relaxed text-cofre-suave sm:max-w-sm sm:text-right">
+          {projetada
+            ? 'Valores em moeda futura, não em poder de compra de hoje. Corrigir aporte, resgate e capital pelo mesmo índice não altera o ranking.'
+            : 'Valores do estudo oficial de cada seguradora, sem projeção de inflação.'}
+        </p>
+      </div>
 
       {/* Cards de Ranking com Backlight no 1º lugar */}
       {/*
@@ -158,7 +239,8 @@ export function Resultado({
               initial="oculto"
               animate="visivel"
               variants={entrada}
-              className={`relative overflow-hidden rounded-xl border p-4.5 transition-all ${
+              whileHover={{ scale: 1.05 }}
+              className={`relative overflow-hidden rounded-xl border p-4.5 transition-colors ${
                 ehPrimeiro
                   ? 'border-cofre-acento bg-gradient-to-b from-cofre-placa-clara to-cofre-placa shadow-[0_4px_30px_-4px_rgba(212,162,78,0.3)]'
                   : 'border-cofre-borda bg-gradient-to-b from-cofre-placa to-[#08152B] hover:border-cofre-borda/80'
@@ -187,13 +269,15 @@ export function Resultado({
                 >
                   {indice + 1}º
                 </span>
-                <span className="shrink-0 rounded-md bg-white/95 px-2 py-1 shadow-sm">
+                <span className="flex h-9 w-[76px] shrink-0 items-center justify-center rounded-md bg-white/95 px-2 shadow-sm">
                   <Image
                     src={linha.logo}
                     alt={linha.seguradora}
-                    width={64}
-                    height={22}
-                    className="h-4 w-auto object-contain"
+                    width={160}
+                    height={56}
+                    className={`w-auto max-w-full object-contain ${
+                      ALTURA_LOGO[linha.seguradora] ?? ALTURA_LOGO_PADRAO
+                    }`}
                   />
                 </span>
               </div>
@@ -256,7 +340,7 @@ export function Resultado({
                       criterio.valores[indice] === 'não atinge'
                         ? 'font-semibold text-cofre-alerta'
                         : indice === 0
-                          ? 'font-bold text-cofre-acento'
+                          ? 'font-bold text-cofre-texto'
                           : 'font-medium text-cofre-texto'
                     }`}
                   >
@@ -277,7 +361,7 @@ export function Resultado({
         className="hidden overflow-hidden rounded-xl border border-cofre-borda bg-cofre-placa shadow-2xl md:block"
       >
         <div className="border-b border-cofre-borda bg-cofre-placa-clara px-4 py-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-cofre-texto">
             Quadro Comparativo de Métricas
           </h3>
         </div>
@@ -341,7 +425,7 @@ export function Resultado({
               </p>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-xs uppercase tracking-wider text-cofre-acento font-semibold">
+              <p className="text-xs uppercase tracking-wider text-cofre-suave font-semibold">
                 Valor Preservado
               </p>
               <p className="text-3xl font-extrabold tracking-tight text-cofre-acento drop-shadow-sm">
@@ -432,7 +516,7 @@ function Linha({ titulo, valores }: { titulo: string; valores: string[] }) {
             valor === 'não atinge'
               ? 'font-semibold text-cofre-alerta'
               : indice === 0
-                ? 'font-bold text-cofre-acento'
+                ? 'font-bold text-cofre-texto'
                 : 'font-medium text-cofre-texto'
           }`}
         >

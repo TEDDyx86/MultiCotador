@@ -4,13 +4,21 @@ import Decimal from 'decimal.js'
 import { montarComparativo } from '@/lib/motor/comparativo'
 import { multicotar } from '@/lib/motor/cotacao'
 import { repositorioJson } from '@/lib/repositorio/repositorioJson'
+import { projetarPorIpca } from '@/lib/motor/projecao'
+import { IPCA_PADRAO, taxaDePercentual } from '@/lib/dominio/indexacao'
 import { moeda, percentual } from '@/lib/formato'
 import type { Sexo } from '@/lib/dominio/tipos'
+import type { Comparativo } from '@/lib/motor/comparativo'
 
 export interface Entrada {
   sexo: Sexo
   idade: number
   capital: string
+  /**
+   * Taxa anual de IPCA em pontos percentuais, como digitada ("4,5"). Ausente ou
+   * invalida cai na meta do Banco Central.
+   */
+  taxaIpca?: string
 }
 
 /** Tudo ja formatado: o cliente nao recebe Decimal nem a tabela de tarifas. */
@@ -43,12 +51,41 @@ export interface LinhaProduto {
 export type Resultado =
   | {
       ok: true
+      /** Visao nominal: os numeros que as seguradoras assinam. */
       comparativo: LinhaResultado[]
+      valorPreservado: string
+      /**
+       * A mesma tabela reexpressa em moeda futura pelo IPCA informado. Vem
+       * junto, e nao numa segunda chamada, para o corretor alternar as duas
+       * visoes na frente do cliente sem espera — e sem que a tabela de tarifas
+       * precise sair do servidor.
+       */
+      projetado: LinhaResultado[]
+      valorPreservadoProjetado: string
+      /** A taxa efetivamente usada, ja formatada ("4,5%"). */
+      taxaIpca: string
       todos: LinhaProduto[]
       indisponiveis: Array<{ produtoId: string; motivo: string }>
-      valorPreservado: string
     }
   | { ok: false; erro: string }
+
+/** Formata uma visao do comparativo para a tela. */
+function paraTela(comp: Comparativo): LinhaResultado[] {
+  return comp.linhas.map((l) => ({
+    produtoId: l.produtoId,
+    seguradora: l.seguradora,
+    logo: l.logo,
+    aporteAnual: moeda(l.aporteAnual),
+    aporteMensal: moeda(l.aporteAnual.dividedBy(12)),
+    aporteAcumulado10a: moeda(l.aporteAcumulado10a),
+    custoSobreCapital: percentual(l.custoSobreCapital),
+    breakevenDocumento: l.breakevenDocumento,
+    breakevenReal: l.breakevenReal,
+    resgate10a: moeda(l.resgate10a),
+    resgateAbaixoDoAportado: l.resgate10a.lessThan(l.aporteAcumulado10a),
+    estimada: l.fonteTarifa === 'ESTIMADO',
+  }))
+}
 
 export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
   let capital: Decimal
@@ -96,24 +133,19 @@ export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
 
   const comp = montarComparativo(repo, entrada.sexo, entrada.idade, capital)
 
+  // Taxa invalida nao derruba a cotacao: cai no padrao e o documento imprime a
+  // taxa que de fato foi usada, entao nao ha como sair numero sem procedencia.
+  const taxa = (entrada.taxaIpca ? taxaDePercentual(entrada.taxaIpca) : null) ?? IPCA_PADRAO
+  const projecao = projetarPorIpca(comp, taxa)
+
   return {
     ok: true,
     valorPreservado: moeda(comp.valorPreservado),
     indisponiveis,
-    comparativo: comp.linhas.map((l) => ({
-      produtoId: l.produtoId,
-      seguradora: l.seguradora,
-      logo: l.logo,
-      aporteAnual: moeda(l.aporteAnual),
-      aporteMensal: moeda(l.aporteAnual.dividedBy(12)),
-      aporteAcumulado10a: moeda(l.aporteAcumulado10a),
-      custoSobreCapital: percentual(l.custoSobreCapital),
-      breakevenDocumento: l.breakevenDocumento,
-      breakevenReal: l.breakevenReal,
-      resgate10a: moeda(l.resgate10a),
-      resgateAbaixoDoAportado: l.resgate10a.lessThan(l.aporteAcumulado10a),
-      estimada: l.fonteTarifa === 'ESTIMADO',
-    })),
+    comparativo: paraTela(comp),
+    projetado: paraTela(projecao),
+    valorPreservadoProjetado: moeda(projecao.valorPreservado),
+    taxaIpca: percentual(taxa.times(100)),
     todos: cotacoes.map((c) => ({
       produtoId: c.produto.id,
       seguradora: c.produto.seguradora,

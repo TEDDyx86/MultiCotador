@@ -31,11 +31,46 @@
   outline-offset: 2px;
 }
 
-/* Efeito de iluminação de estúdio no fundo */
+/*
+ * Realce de hover: 5% de zoom, sem trocar cor nenhuma.
+ *
+ * A inversao de fundo e texto que existia antes trocava a identidade do
+ * elemento a cada passagem do mouse — em reuniao com o cliente na tela, isso le
+ * como a interface piscando. O zoom diz "isto responde ao seu clique" sem mexer
+ * na cor.
+ *
+ * `hover: hover` deixa a regra de fora de telas de toque, onde o :hover fica
+ * grudado depois do toque e o elemento permaneceria ampliado.
+ */
+.realce-hover {
+  transition: transform 180ms ease-out;
+}
+
+@media (hover: hover) {
+  .realce-hover:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Quem pediu menos movimento continua vendo o realce, so que sem a animacao. */
+@media (prefers-reduced-motion: reduce) {
+  .realce-hover {
+    transition: none;
+  }
+}
+
+/*
+ * Efeito de iluminação de estúdio no fundo.
+ *
+ * A luz focal superior era dourada e cobria a página inteira — o oposto de usar
+ * dourado como destaque pontual, porque tingia de ouro tudo o que estivesse por
+ * cima. A iluminação continua; a cor dela virou fria, e o ouro ficou reservado
+ * para a opção recomendada e a ação principal.
+ */
 .bg-vault-studio {
   background-color: #050E1D;
-  background-image: 
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(212, 162, 78, 0.10), transparent 70%),
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(158, 179, 205, 0.07), transparent 70%),
     radial-gradient(ellipse 70% 50% at 50% 100%, rgba(16, 38, 77, 0.6), transparent 85%),
     radial-gradient(circle at 10% 40%, rgba(14, 34, 70, 0.4), transparent 45%),
     radial-gradient(circle at 90% 60%, rgba(14, 34, 70, 0.35), transparent 45%);

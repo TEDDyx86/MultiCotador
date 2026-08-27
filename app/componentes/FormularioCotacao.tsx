@@ -11,15 +11,11 @@ import {
   dataBrasileiraParaDate,
 } from '@/lib/formato'
 import { CampoMoeda } from './CampoMoeda'
+import { IPCA_PADRAO, taxaDePercentual } from '@/lib/dominio/indexacao'
 import type { DadosFormulario, Sexo } from '@/lib/dominio/tipos'
 
-const ESTADOS_CIVIS = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)']
-const REGIMES = [
-  'Comunhão parcial de bens',
-  'Comunhão universal de bens',
-  'Separação total de bens',
-  'Participação final nos aquestos',
-]
+/** A meta do Banco Central, em pontos percentuais, como aparece no campo. */
+const TAXA_INICIAL = IPCA_PADRAO.times(100).toString().replace('.', ',')
 
 const ATALHOS_CAPITAL = [
   { rotulo: '500 mil', valor: '50000000' },
@@ -42,17 +38,17 @@ export function FormularioCotacao({ aoResultado }: Props) {
   const [nome, setNome] = useState('')
   const [sexo, setSexo] = useState<Sexo>('M')
   const [dataTexto, setDataTexto] = useState('')
-  const [estadoCivil, setEstadoCivil] = useState(ESTADOS_CIVIS[0])
-  const [regimeBens, setRegimeBens] = useState(REGIMES[0])
-  const [profissao, setProfissao] = useState('')
   const [capital, setCapital] = useState('100000000') // R$ 1.000.000,00
+  const [taxaIpca, setTaxaIpca] = useState(TAXA_INICIAL)
   const [processando, iniciarTransicao] = useTransition()
 
   // Converte a data digitada DD/MM/AAAA para objeto Date
   const dataNascimento = dataBrasileiraParaDate(dataTexto)
   const idade = dataNascimento ? idadeEm(dataNascimento, new Date()) : null
   const idadeValida = idade !== null && idade >= 0 && idade <= 120
-  const podeEnviar = nome.trim().length > 0 && idadeValida && capital.length > 0
+  const taxaValida = taxaDePercentual(taxaIpca) !== null
+  const podeEnviar =
+    nome.trim().length > 0 && idadeValida && capital.length > 0 && taxaValida
 
   function aoMudarData(e: React.ChangeEvent<HTMLInputElement>) {
     setDataTexto(mascaraData(e.target.value))
@@ -61,8 +57,8 @@ export function FormularioCotacao({ aoResultado }: Props) {
   function limparFormulario() {
     setNome('')
     setDataTexto('')
-    setProfissao('')
     setCapital('100000000')
+    setTaxaIpca(TAXA_INICIAL)
     aoResultado(null, null)
   }
 
@@ -77,12 +73,9 @@ export function FormularioCotacao({ aoResultado }: Props) {
         sexo,
         idade,
         capital: valor,
-        estadoCivil,
-        // O regime so descreve a situacao de quem e casado ou tem uniao estavel.
-        regimeBens: estadoCivil === 'Casado(a)' || estadoCivil === 'União estável' ? regimeBens : null,
-        profissao: profissao.trim(),
+        taxaIpca,
       }
-      aoResultado(await cotarComparativo({ sexo, idade, capital: valor }), dados)
+      aoResultado(await cotarComparativo({ sexo, idade, capital: valor, taxaIpca }), dados)
     })
   }
 
@@ -92,13 +85,13 @@ export function FormularioCotacao({ aoResultado }: Props) {
       className="relative overflow-hidden rounded-xl border border-cofre-borda bg-gradient-to-b from-cofre-placa to-[#08152B] p-6 shadow-2xl"
     >
       <div className="mb-5 flex items-center justify-between border-b border-cofre-borda/60 pb-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-cofre-texto">
           Dados do cliente
         </h2>
         <button
           type="button"
           onClick={limparFormulario}
-          className="alvo-discreto -mr-3 -my-2 px-3 py-2 text-xs text-cofre-suave transition-colors hover:text-cofre-acento"
+          className="alvo-discreto -mr-3 -my-2 px-3 py-2 text-xs text-cofre-suave transition-colors hover:text-cofre-texto"
         >
           Limpar
         </button>
@@ -150,7 +143,7 @@ export function FormularioCotacao({ aoResultado }: Props) {
             <p className="mt-1.5 flex items-center gap-1.5 text-xs text-cofre-suave">
               {dataTexto.length === 10 ? (
                 idadeValida ? (
-                  <span className="inline-flex items-center rounded bg-cofre-acento/15 px-2 py-0.5 text-xs font-semibold text-cofre-acento">
+                  <span className="inline-flex items-center rounded bg-cofre-placa-clara px-2 py-0.5 text-xs font-semibold text-cofre-texto">
                     {idade} anos calculados
                   </span>
                 ) : (
@@ -172,9 +165,9 @@ export function FormularioCotacao({ aoResultado }: Props) {
                 type="button"
                 onClick={() => setSexo(opcao)}
                 aria-pressed={sexo === opcao}
-                className={`flex-1 rounded-md border py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-150 ${
+                className={`realce-hover flex-1 rounded-md border py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-150 ${
                   sexo === opcao
-                    ? 'border-cofre-acento bg-cofre-acento/15 text-cofre-acento shadow-sm'
+                    ? 'border-cofre-suave/60 bg-cofre-placa-clara text-cofre-texto shadow-sm'
                     : 'border-cofre-borda bg-[#061224] text-cofre-suave hover:border-cofre-borda/80 hover:text-cofre-texto'
                 }`}
               >
@@ -182,58 +175,6 @@ export function FormularioCotacao({ aoResultado }: Props) {
               </button>
             ))}
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="estadoCivil" className={rotulo}>
-            Estado civil
-          </label>
-          <select
-            id="estadoCivil"
-            value={estadoCivil}
-            onChange={(e) => setEstadoCivil(e.target.value)}
-            className={campo}
-          >
-            {ESTADOS_CIVIS.map((e) => (
-              <option key={e} value={e} className="bg-cofre-placa text-cofre-texto">
-                {e}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {(estadoCivil === 'Casado(a)' || estadoCivil === 'União estável') && (
-          <div>
-            <label htmlFor="regime" className={rotulo}>
-              Regime de bens
-            </label>
-            <select
-              id="regime"
-              value={regimeBens}
-              onChange={(e) => setRegimeBens(e.target.value)}
-              className={campo}
-            >
-              {REGIMES.map((r) => (
-                <option key={r} value={r} className="bg-cofre-placa text-cofre-texto">
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="profissao" className={rotulo}>
-            Profissão
-          </label>
-          <input
-            id="profissao"
-            value={profissao}
-            onChange={(e) => setProfissao(e.target.value)}
-            placeholder="Ex: Empresário"
-            className={campo}
-            autoComplete="off"
-          />
         </div>
 
         <div className="sm:col-span-2">
@@ -256,9 +197,9 @@ export function FormularioCotacao({ aoResultado }: Props) {
                 type="button"
                 onClick={() => setCapital(atalho.valor)}
                 aria-pressed={capital === atalho.valor}
-                className={`rounded border px-1 py-1.5 text-xs transition-all ${
+                className={`realce-hover rounded border px-1 py-1.5 text-xs transition-all ${
                   capital === atalho.valor
-                    ? 'border-cofre-acento bg-cofre-acento/15 font-semibold text-cofre-acento'
+                    ? 'border-cofre-suave/60 bg-cofre-placa-clara font-semibold text-cofre-texto'
                     : 'border-cofre-borda bg-[#061224] text-cofre-suave hover:border-cofre-borda/80 hover:text-cofre-texto'
                 }`}
               >
@@ -267,11 +208,48 @@ export function FormularioCotacao({ aoResultado }: Props) {
             ))}
           </div>
         </div>
+
+        {/*
+         * A taxa fica no formulario, e nao escondida atras do toggle: ela e um
+         * pressuposto do estudo, nao uma preferencia de exibicao. O corretor
+         * escolhe o cenario antes de calcular, e a taxa usada vai impressa no
+         * documento.
+         */}
+        <div className="sm:col-span-2">
+          <label htmlFor="ipca" className={rotulo}>
+            IPCA anual para projeção
+          </label>
+          <div className="relative">
+            <input
+              id="ipca"
+              type="text"
+              inputMode="decimal"
+              maxLength={5}
+              value={taxaIpca}
+              onChange={(e) => setTaxaIpca(e.target.value)}
+              placeholder="4,5"
+              className={campo}
+              autoComplete="off"
+              aria-describedby="ipca-ajuda"
+            />
+            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-cofre-suave">
+              % a.a.
+            </span>
+          </div>
+          <p id="ipca-ajuda" className="mt-1.5 text-xs text-cofre-suave">
+            {taxaValida ? (
+              'Usada apenas na visão corrigida. Zero equivale ao nominal.'
+            ) : (
+              <span className="text-cofre-perigo">Informe uma taxa entre 0 e 20%.</span>
+            )}
+          </p>
+        </div>
       </div>
 
       <motion.button
         type="submit"
         disabled={!podeEnviar || processando}
+        whileHover={podeEnviar && !processando ? { scale: 1.05 } : undefined}
         whileTap={{ scale: 0.985 }}
         /* O anel de foco e escuro sobre o ouro do botao, com deslocamento: era o
            unico dos 14 focaveis que nao mudava nada ao receber foco de teclado —

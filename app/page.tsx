@@ -15,8 +15,13 @@ export default function Pagina() {
               Comparativo de aporte, valor de resgate e eficiência patrimonial entre seguradoras
             </p>
           </div>
-          <span className="hidden text-xs font-semibold uppercase tracking-wider text-cofre-acento/80 sm:block">
-            Vigência Vitalícia • Aporte Decenal
+          {/* "Decenal" e jargao de seguradora: o cliente le esta tela junto com
+              o assessor. Duas linhas separam a vigencia do prazo de aporte, que
+              sao dois fatos distintos e vinham colados por um bullet. */}
+          <span className="hidden text-right text-xs font-semibold uppercase tracking-wider text-cofre-suave sm:block">
+            Vigência Vitalícia
+            <br />
+            Aporte em 10 Anos
           </span>
         </div>
         <Painel />

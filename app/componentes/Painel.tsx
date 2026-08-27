@@ -63,7 +63,7 @@ export function Painel() {
                 }}
               />
               <div className="relative z-10 flex flex-col items-center max-w-sm">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-cofre-acento/30 bg-cofre-acento/10 text-cofre-acento shadow-inner">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-cofre-borda bg-cofre-placa-clara text-cofre-suave shadow-inner">
                   <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                     <path
                       strokeLinecap="round"
@@ -83,19 +83,19 @@ export function Painel() {
                 </p>
                 <div className="mt-5 flex items-center gap-3 text-xs text-cofre-suave/80">
                   <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-acento" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-suave/60" />
                     MAG
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-acento" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-suave/60" />
                     Icatu
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-acento" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-suave/60" />
                     MetLife
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-acento" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-cofre-suave/60" />
                     Prudential
                   </span>
                 </div>

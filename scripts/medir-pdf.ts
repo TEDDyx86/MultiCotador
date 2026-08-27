@@ -1,15 +1,27 @@
 /**
- * Mede a altura de cada bloco do documento contra a pagina A4.
+ * Mede a altura de cada bloco do documento contra o espaco util da pagina.
  *
- * O estudo tem de caber numa unica folha. Quando o conteudo passa, o PDF nao
- * reclama: ele simplesmente cria uma segunda pagina, e o layout flex ainda pode
- * mascarar o problema comprimindo blocos. Esta medicao mostra onde esta o
- * excesso antes de sair cortando no escuro.
+ * O estudo tem de caber numa unica folha. Como o body tem altura fixa de uma A4
+ * e `overflow:hidden`, o excesso nao vira uma segunda pagina: ele e **cortado em
+ * silencio**. O rodape continua no lugar e o que sobrou some sem aviso, que e
+ * pior do que uma folha extra — ninguem percebe olhando o PDF.
  *
- * Uso: npx tsx scripts/medir-pdf.ts
+ * Por isso a medicao compara o conteudo de `.corpo` com a altura que `.corpo`
+ * realmente tem, e nao a altura do body contra os 841,9pt da folha: o body tem
+ * altura fixa, entao aquela conta media sempre a mesma coisa e ainda acusava
+ * 0,4pt de excesso inexistente, so por causa do arredondamento do viewport
+ * (1123px = 842,25pt contra 841,89pt de A4).
+ *
+ * Uso: npx tsx scripts/medir-pdf.ts ["Nome do cliente"] [capital] [nominal|ipca]
+ *
+ * Nome e capital entram por argumento porque sao as duas entradas capazes de
+ * mudar a altura: um nome longo empurra a chamada para uma segunda linha, e um
+ * capital muito alto pode fazer um valor quebrar dentro da celula da tabela.
  */
 import Decimal from 'decimal.js'
 import { montarComparativo } from '../lib/motor/comparativo'
+import { projetarPorIpca } from '../lib/motor/projecao'
+import { IPCA_PADRAO } from '../lib/dominio/indexacao'
 import { repositorioJson } from '../lib/repositorio/repositorioJson'
 import { moeda, percentual } from '../lib/formato'
 import { montarHtml } from '../lib/pdf/template'
@@ -18,18 +30,19 @@ import { abrirNavegador } from '../lib/pdf/navegador'
 const ALTURA_A4_PT = 841.9
 
 async function main() {
-  const capital = new Decimal('1000000')
-  const c = montarComparativo(repositorioJson, 'M', 50, capital)
+  const capital = new Decimal(process.argv[3] ?? '1000000')
+  const projetada = process.argv[4] === 'ipca'
+  const nominal = montarComparativo(repositorioJson, 'M', 50, capital)
+  const c = projetada ? projetarPorIpca(nominal, IPCA_PADRAO) : nominal
 
   const html = montarHtml({
-    nome: 'John Daniel',
+    nome: process.argv[2] ?? 'John Daniel',
     idade: 50,
     sexo: 'M',
     capitalFormatado: moeda(capital),
-    estadoCivil: 'Casado(a)',
-    regimeBens: 'Comunhão parcial de bens',
-    profissao: 'Empresário',
     valorPreservado: moeda(c.valorPreservado),
+    projetada,
+    taxaIpca: percentual(IPCA_PADRAO.times(100)),
     comparativo: c.linhas.map((l) => ({
       produtoId: l.produtoId,
       seguradora: l.seguradora,
@@ -65,12 +78,28 @@ async function main() {
       const st = getComputedStyle(el);
       blocos[sel] = paraPt(r.height + parseFloat(st.marginTop) + parseFloat(st.marginBottom));
     }
-    return { total: paraPt(document.body.scrollHeight), blocos };
-  })()`)) as { total: number; blocos: Record<string, number> }
+    const corpo = document.querySelector('.corpo');
+    /*
+     * A base do ultimo bloco, e nao o scrollHeight: o corpo e flex:1 e estica
+     * ate o rodape, entao seu scrollHeight nunca fica abaixo do clientHeight e a
+     * folga real apareceria sempre como zero.
+     */
+    const base = corpo.lastElementChild.getBoundingClientRect().bottom;
+    return {
+      conteudo: paraPt(base - corpo.getBoundingClientRect().top),
+      disponivel: paraPt(corpo.clientHeight),
+      blocos,
+    };
+  })()`)) as { conteudo: number; disponivel: number; blocos: Record<string, number> }
 
-  const excesso = Math.round((medida.total - ALTURA_A4_PT) * 10) / 10
-  console.log(`conteudo: ${medida.total}pt   pagina A4: ${ALTURA_A4_PT}pt`)
-  console.log(excesso > 0 ? `EXCESSO: ${excesso}pt (vai gerar 2 paginas)` : `folga: ${-excesso}pt`)
+  const excesso = Math.round((medida.conteudo - medida.disponivel) * 10) / 10
+  console.log(`pagina A4: ${ALTURA_A4_PT}pt`)
+  console.log(`corpo: ${medida.conteudo}pt de conteudo em ${medida.disponivel}pt uteis`)
+  console.log(
+    excesso > 0
+      ? `EXCESSO: ${excesso}pt — o final do documento sai cortado`
+      : `folga: ${-excesso}pt`,
+  )
   console.log('\npor bloco (pt, com margens):')
   for (const [bloco, altura] of Object.entries(medida.blocos)) {
     console.log(`  ${bloco.padEnd(18)} ${String(altura).padStart(6)}`)

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import Decimal from 'decimal.js'
 import { montarComparativo } from '@/lib/motor/comparativo'
+import { projetarPorIpca } from '@/lib/motor/projecao'
+import { IPCA_PADRAO, taxaDePercentual } from '@/lib/dominio/indexacao'
 import { repositorioJson } from '@/lib/repositorio/repositorioJson'
 import { moeda, percentual } from '@/lib/formato'
 import { montarHtml } from '@/lib/pdf/template'
@@ -17,9 +19,8 @@ interface Corpo {
   sexo?: unknown
   idade?: unknown
   capital?: unknown
-  estadoCivil?: unknown
-  regimeBens?: unknown
-  profissao?: unknown
+  visao?: unknown
+  taxaIpca?: unknown
 }
 
 function texto(valor: unknown): string | undefined {
@@ -70,16 +71,25 @@ export async function POST(requisicao: Request) {
     )
   }
 
+  /*
+   * A visao vem da tela, mas e revalidada aqui: nada garante que a chamada
+   * partiu dali, e um documento assinado nao pode sair numa moeda que ninguem
+   * escolheu. Qualquer coisa fora de "ipca" cai no nominal.
+   */
+  const projetada = corpo.visao === 'ipca'
+  const taxa =
+    (typeof corpo.taxaIpca === 'string' ? taxaDePercentual(corpo.taxaIpca) : null) ?? IPCA_PADRAO
+  const escolhido = projetada ? projetarPorIpca(comparativo, taxa) : comparativo
+
   const html = montarHtml({
     nome,
     idade,
     sexo,
     capitalFormatado: moeda(capital),
-    estadoCivil: texto(corpo.estadoCivil),
-    regimeBens: texto(corpo.regimeBens) ?? null,
-    profissao: texto(corpo.profissao),
-    valorPreservado: moeda(comparativo.valorPreservado),
-    comparativo: comparativo.linhas.map((l) => ({
+    valorPreservado: moeda(escolhido.valorPreservado),
+    projetada,
+    taxaIpca: percentual(taxa.times(100)),
+    comparativo: escolhido.linhas.map((l) => ({
       produtoId: l.produtoId,
       seguradora: l.seguradora,
       logo: l.logo,

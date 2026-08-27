@@ -9,6 +9,8 @@
 import { writeFileSync } from 'node:fs'
 import Decimal from 'decimal.js'
 import { montarComparativo } from '../lib/motor/comparativo'
+import { projetarPorIpca } from '../lib/motor/projecao'
+import { IPCA_PADRAO } from '../lib/dominio/indexacao'
 import { repositorioJson } from '../lib/repositorio/repositorioJson'
 import { moeda, percentual } from '../lib/formato'
 import { montarHtml } from '../lib/pdf/template'
@@ -18,17 +20,18 @@ const destino = process.argv[2] ?? 'comparativo-exemplo.pdf'
 
 // Mesmo perfil do estudo de referencia, para permitir comparacao lado a lado.
 const capital = new Decimal('1000000')
-const comparativo = montarComparativo(repositorioJson, 'M', 50, capital)
+const projetada = process.argv[4] === 'ipca'
+const nominal = montarComparativo(repositorioJson, 'M', 50, capital)
+const comparativo = projetada ? projetarPorIpca(nominal, IPCA_PADRAO) : nominal
 
 const html = montarHtml({
-  nome: 'John Daniel',
+  nome: process.argv[3] ?? 'John Daniel',
   idade: 50,
   sexo: 'M',
   capitalFormatado: moeda(capital),
-  estadoCivil: 'Casado(a)',
-  regimeBens: 'Comunhão parcial de bens',
-  profissao: 'Empresário',
   valorPreservado: moeda(comparativo.valorPreservado),
+  projetada,
+  taxaIpca: percentual(IPCA_PADRAO.times(100)),
   comparativo: comparativo.linhas.map((l) => ({
     produtoId: l.produtoId,
     seguradora: l.seguradora,

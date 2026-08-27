@@ -54,15 +54,15 @@ export interface DadosCliente {
   nome: string
   sexo: Sexo
   dataNascimento: Date
-  estadoCivil: string
-  regimeBens: string | null
-  profissao: string
 }
 
 /**
  * Dados do cliente que viajam do formulario ate o documento.
- * Nome, estado civil, regime de bens e profissao nao afetam o calculo — sao
- * identificacao e contexto sucessorio impressos no comparativo.
+ *
+ * O nome nao afeta o calculo — e identificacao impressa no comparativo. Estado
+ * civil, regime de bens e profissao viviam aqui pelo mesmo motivo e foram
+ * retirados: nao entravam em conta nenhuma e ocupavam uma linha do documento,
+ * que precisa caber em uma unica pagina A4.
  */
 export interface DadosFormulario {
   nome: string
@@ -70,7 +70,15 @@ export interface DadosFormulario {
   idade: number
   /** Capital em formato decimal, ex.: "1000000.00". */
   capital: string
-  estadoCivil: string
-  regimeBens: string | null
-  profissao: string
+  /** Taxa anual de IPCA em pontos percentuais, como digitada ("4,5"). */
+  taxaIpca: string
 }
+
+/**
+ * Em que moeda o estudo esta expresso.
+ *
+ * `nominal` sao os numeros que as seguradoras assinam. `ipca` reexpressa os
+ * mesmos numeros na moeda do ano em que serao pagos e recebidos — o que nao
+ * muda o poder de compra nem o ranking, so a unidade.
+ */
+export type Visao = 'nominal' | 'ipca'

@@ -30,39 +30,59 @@ function comoDataUri(chave: string, mime: string, bytes: Buffer): string {
 }
 
 /**
- * Versao sem o fundo navy solido: o cabecalho do estudo tem gradiente, e o
- * retangulo embutido no arquivo original apareceria recortado sobre ele.
+ * Versao negativa oficial, recortada na marca util: 1809x347.
+ *
+ * A anterior tinha 173x34 e era impressa com 28pt de altura, quase tres vezes o
+ * proprio tamanho — dai a pixelacao no cabecalho. Esta cobre a mesma altura com
+ * sobra, e ja vem com fundo transparente, entao assenta sobre o gradiente da
+ * faixa sem o retangulo navy que o arquivo original trazia embutido.
  */
 export function logoBlue3(): string {
   return comoDataUri(
     'blue3',
     'image/png',
-    readFileSync(join(RAIZ, 'public/marcas/blue3-transparente.png')),
+    readFileSync(join(RAIZ, 'public/marcas/blue3-negativa.png')),
   )
 }
 
+/**
+ * Versao navy, para o papel branco do documento.
+ *
+ * Antes usava a logo branca da tela com `filter:brightness(0)`, que a jogava
+ * para preto puro. O modelo assina em navy (#232840); a arte oficial e #21253E,
+ * a mesma tinta. Com o arquivo certo o hack sai e a cor bate.
+ */
 export function logoRt(): string {
   return comoDataUri(
     'rt',
     'image/png',
-    readFileSync(join(RAIZ, 'public/marcas/rt-horizontal-branca.png')),
+    readFileSync(join(RAIZ, 'public/marcas/rt-horizontal-navy.png')),
   )
 }
 
-/** As fontes que o estudo original usa, para o layout nao escorregar. */
+/**
+ * As fontes que o estudo original usa, para o layout nao escorregar.
+ *
+ * Em TrueType, e nao no OTF original. O Chrome nao consegue embutir contornos
+ * CFF direto: ele converte a fonte em Type3, um formato de glifos procedurais.
+ * O documento continuava legivel, mas com metricas proprias — negrito e regular
+ * assentavam em alturas diferentes na mesma linha da tabela — e sem a fonte
+ * CID que o modelo usa. Convertidas para contornos quadraticos, o Chrome as
+ * embute como Type0, igual ao modelo.
+ */
 export function fonteRegular(): string {
   return comoDataUri(
     'heros',
-    'font/otf',
-    readFileSync(join(RAIZ, 'public/fontes/texgyreheros-regular.otf')),
+    'font/ttf',
+    readFileSync(join(RAIZ, 'public/fontes/texgyreheros-regular.ttf')),
   )
 }
 
 export function fonteNegrito(): string {
   return comoDataUri(
     'heros-bold',
-    'font/otf',
-    readFileSync(join(RAIZ, 'public/fontes/texgyreheros-bold.otf')),
+    'font/ttf',
+    readFileSync(join(RAIZ, 'public/fontes/texgyreheros-bold.ttf')),
   )
 }
 

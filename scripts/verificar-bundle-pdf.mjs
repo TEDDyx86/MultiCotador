@@ -27,11 +27,15 @@ const OBRIGATORIOS = [
   { rotulo: 'swiftshader (render por software)', padrao: /swiftshader\.tar\.br$/ },
   { rotulo: 'fontes do sistema', padrao: /fonts\.tar\.br$/ },
   // Ativos que o template le do disco.
-  { rotulo: 'fonte TeX Gyre Heros regular', padrao: /texgyreheros-regular\.otf$/ },
-  { rotulo: 'fonte TeX Gyre Heros bold', padrao: /texgyreheros-bold\.otf$/ },
+  // Em TrueType, que e o que o template embute: o Chromium converte OTF em
+  // Type3 e o documento perde as metricas. Conferir o .otf aqui daria "ok"
+  // enquanto a fonte realmente lida em runtime podia estar fora do bundle.
+  { rotulo: 'fonte TeX Gyre Heros regular', padrao: /texgyreheros-regular\.ttf$/ },
+  { rotulo: 'fonte TeX Gyre Heros bold', padrao: /texgyreheros-bold\.ttf$/ },
   { rotulo: 'fonte DejaVu Serif Italic', padrao: /DejaVuSerif-Italic\.ttf$/ },
-  { rotulo: 'logo Blue3', padrao: /blue3-transparente\.png$/ },
-  { rotulo: 'logo Robson Tavernard', padrao: /rt-horizontal-branca\.png$/ },
+  { rotulo: 'logo Blue3', padrao: /blue3-negativa\.png$/ },
+  // Navy, e nao a branca da tela: o documento imprime sobre papel branco.
+  { rotulo: 'logo Robson Tavernard', padrao: /rt-horizontal-navy\.png$/ },
 ]
 
 let faltando = 0
