@@ -35,9 +35,13 @@ export function cotar(
 
   const tarifa = repo.tarifa(produtoId, sexo, idade)
   if (!tarifa) {
+    /*
+     * Curto de proposito: a idade do cliente ja esta no formulario ao lado, e
+     * numa cotacao de 76 anos quase toda seguradora sai de faixa — repetir
+     * "nao esta disponivel aos 76 anos" cinco vezes enchia meia tela de aviso.
+     */
     throw new TarifaIndisponivel(
-      `${produto.nome} não está disponível aos ${idade} anos ` +
-        `(faixa de ${produto.idadeMin} a ${produto.idadeMax}).`,
+      `${produto.nome}: fora da faixa etária (${produto.idadeMin} a ${produto.idadeMax} anos).`,
     )
   }
 

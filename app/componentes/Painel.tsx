@@ -1,15 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { FormularioCotacao } from './FormularioCotacao'
 import { Resultado } from './Resultado'
-import type { Resultado as TipoResultado } from '@/app/acoes'
-import type { DadosFormulario } from '@/lib/dominio/tipos'
+import { ApoioResultado } from './ApoioResultado'
+import { cotarComparativo, type Resultado as TipoResultado } from '@/app/acoes'
+import { TAXA_INICIAL, taxaDePercentual } from '@/lib/dominio/indexacao'
+import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
 
 export function Painel() {
   const [resultado, setResultado] = useState<TipoResultado | null>(null)
   const [dados, setDados] = useState<DadosFormulario | null>(null)
+  /*
+   * A visao e a taxa moram aqui, e nao dentro do resultado, porque as duas
+   * colunas dependem delas: o quadro comparativo a direita e as observacoes
+   * tecnicas a esquerda, que mudam conforme o resgate alcance ou nao o
+   * aportado na moeda escolhida.
+   */
+  const [visao, setVisao] = useState<Visao>('nominal')
+  const [taxa, setTaxa] = useState(TAXA_INICIAL)
+  const [recalculando, iniciarRecalculo] = useTransition()
+
+  /*
+   * Trocar a taxa refaz a conta no servidor, onde a tabela de tarifas vive.
+   * Espera meio segundo depois da ultima tecla: sem isso, digitar "12" dispara
+   * uma cotacao para "1" e outra para "12", e a primeira pode chegar depois.
+   */
+  useEffect(() => {
+    if (!dados || taxa === dados.taxaIpca || taxaDePercentual(taxa) === null) return
+    const relogio = setTimeout(() => {
+      iniciarRecalculo(async () => {
+        setResultado(
+          await cotarComparativo({
+            sexo: dados.sexo,
+            idade: dados.idade,
+            capital: dados.capital,
+            taxaIpca: taxa,
+          }),
+        )
+        setDados({ ...dados, taxaIpca: taxa })
+      })
+    }, 500)
+    return () => clearTimeout(relogio)
+  }, [taxa, dados])
 
   // O min-w-0 nos dois itens do grid e o que mantem a tela dentro da largura do
   // aparelho. Item de grid nasce com min-width:auto, que respeita o min-content
@@ -19,8 +53,13 @@ export function Painel() {
   // um nivel acima — o item do grid nao conseguia encolher.
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
+      {/*
+       * O material de apoio ao corretor desce para esta coluna, abaixo do
+       * formulario: ele ocupa 489px de uma coluna tao alta quanto o resultado,
+       * e o espaco vago ja existia. Sem isso a pagina rolava em qualquer tela.
+       */}
       <motion.div
-        className="min-w-0"
+        className="min-w-0 space-y-4"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -31,6 +70,13 @@ export function Painel() {
             setDados(d)
           }}
         />
+        {resultado?.ok && (
+          <ApoioResultado
+            comparativo={visao === 'ipca' ? resultado.projetado : resultado.comparativo}
+            todos={resultado.todos}
+            indisponiveis={resultado.indisponiveis}
+          />
+        )}
       </motion.div>
 
       <div className="min-w-0">
@@ -46,10 +92,11 @@ export function Painel() {
               <Resultado
                 resultado={resultado}
                 dados={dados}
-                aoRecalcular={(r, d) => {
-                  setResultado(r)
-                  setDados(d)
-                }}
+                visao={visao}
+                aoTrocarVisao={setVisao}
+                taxa={taxa}
+                aoTrocarTaxa={setTaxa}
+                recalculando={recalculando}
               />
             </motion.div>
           ) : (

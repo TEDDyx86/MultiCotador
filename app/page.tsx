@@ -5,8 +5,10 @@ export default function Pagina() {
   return (
     <>
       <Cabecalho />
-      <main className="mx-auto w-full max-w-6xl px-6 py-8">
-        <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+      {/* py-5 e nao py-8: sao 24px de respiro que decidiam se a tela rola ou
+          nao num MacBook Air, e a moldura ja e generosa sem eles. */}
+      <main className="mx-auto w-full max-w-6xl px-6 pt-5 pb-4">
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-cofre-texto sm:text-2xl">
               Análise Whole Life

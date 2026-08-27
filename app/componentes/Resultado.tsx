@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import { cotarComparativo, type Resultado as TipoResultado } from '@/app/acoes'
-import { TAXA_INICIAL, taxaDePercentual } from '@/lib/dominio/indexacao'
+import type { Resultado as TipoResultado } from '@/app/acoes'
+import { taxaDePercentual } from '@/lib/dominio/indexacao'
 import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
 import { ValorAnimado } from './ValorAnimado'
 
@@ -34,43 +34,22 @@ const entrada = {
 export function Resultado({
   resultado,
   dados,
-  aoRecalcular,
+  visao,
+  aoTrocarVisao,
+  taxa,
+  aoTrocarTaxa,
+  recalculando,
 }: {
   resultado: TipoResultado
   dados: DadosFormulario | null
-  aoRecalcular?: (resultado: TipoResultado, dados: DadosFormulario) => void
+  visao: Visao
+  aoTrocarVisao: (v: Visao) => void
+  taxa: string
+  aoTrocarTaxa: (t: string) => void
+  recalculando: boolean
 }) {
   const [gerando, setGerando] = useState(false)
   const [erroPdf, setErroPdf] = useState('')
-  const [visao, setVisao] = useState<Visao>('nominal')
-  const [taxa, setTaxa] = useState(dados?.taxaIpca ?? TAXA_INICIAL)
-  const [recalculando, iniciarRecalculo] = useTransition()
-
-  /*
-   * Trocar a taxa refaz a conta no servidor, onde a tabela de tarifas vive.
-   * Espera meio segundo depois da ultima tecla: sem isso, digitar "12" dispara
-   * uma cotacao para "1" e outra para "12", e a primeira pode chegar depois.
-   */
-  useEffect(() => {
-    if (!dados || !aoRecalcular) return
-    if (taxa === dados.taxaIpca) return
-    if (taxaDePercentual(taxa) === null) return
-    const relogio = setTimeout(() => {
-      iniciarRecalculo(async () => {
-        const atualizado = { ...dados, taxaIpca: taxa }
-        aoRecalcular(
-          await cotarComparativo({
-            sexo: dados.sexo,
-            idade: dados.idade,
-            capital: dados.capital,
-            taxaIpca: taxa,
-          }),
-          atualizado,
-        )
-      })
-    }, 500)
-    return () => clearTimeout(relogio)
-  }, [taxa, dados, aoRecalcular])
   const router = useRouter()
   const nome = dados?.nome ?? ''
   if (!resultado.ok) {
@@ -94,7 +73,7 @@ export function Resultado({
     )
   }
 
-  const { todos, indisponiveis, taxaIpca } = resultado
+  const { taxaIpca } = resultado
   const projetada = visao === 'ipca'
 
   /*
@@ -105,9 +84,6 @@ export function Resultado({
   const valorPreservado = projetada
     ? resultado.valorPreservadoProjetado
     : resultado.valorPreservado
-
-  const algumEstimado = comparativo.some((l) => l.estimada)
-  const algumAbaixo = comparativo.some((l) => l.resgateAbaixoDoAportado)
 
   // Uma unica fonte para a tabela do desktop e a lista do telefone: sao duas
   // apresentacoes do mesmo quadro, e nao podem divergir quando um criterio mudar.
@@ -172,9 +148,9 @@ export function Resultado({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header do Estudo com Botão de Ação */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-cofre-borda/60 pb-3.5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-cofre-borda/60 pb-2.5">
         <div className="min-w-0">
           <span className="text-xs font-bold uppercase tracking-wider text-cofre-suave">
             Resultado Comparativo
@@ -225,7 +201,7 @@ export function Resultado({
           type="button"
           role="switch"
           aria-checked={projetada}
-          onClick={() => setVisao(projetada ? 'nominal' : 'ipca')}
+          onClick={() => aoTrocarVisao(projetada ? 'nominal' : 'ipca')}
           className="inline-flex shrink-0 items-center gap-3 rounded-lg border border-cofre-borda bg-cofre-placa px-3.5 py-2 text-left transition-colors hover:border-cofre-borda/70"
         >
           <span
@@ -260,7 +236,7 @@ export function Resultado({
                 inputMode="decimal"
                 maxLength={5}
                 value={taxa}
-                onChange={(e) => setTaxa(e.target.value)}
+                onChange={(e) => aoTrocarTaxa(e.target.value)}
                 aria-invalid={taxaDePercentual(taxa) === null}
                 className="w-24 rounded-md border border-cofre-borda bg-[#061224] py-1.5 pl-2.5 pr-12 text-xs text-cofre-texto shadow-inner outline-none focus:border-cofre-acento focus:ring-1 focus:ring-cofre-acento/40"
               />
@@ -300,7 +276,7 @@ export function Resultado({
               animate="visivel"
               variants={entrada}
               whileHover={{ scale: 1.05 }}
-              className={`relative overflow-hidden rounded-xl border p-4.5 transition-colors ${
+              className={`relative overflow-hidden rounded-xl border p-4 transition-colors ${
                 ehPrimeiro
                   ? 'border-cofre-acento bg-gradient-to-b from-cofre-placa-clara to-cofre-placa shadow-[0_4px_30px_-4px_rgba(212,162,78,0.3)]'
                   : 'border-cofre-borda bg-gradient-to-b from-cofre-placa to-[#08152B] hover:border-cofre-borda/80'
@@ -371,7 +347,7 @@ export function Resultado({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.4 }}
-        className="space-y-2.5 md:hidden"
+        className="space-y-2 md:hidden"
       >
         <h3 className="text-xs font-bold uppercase tracking-wider text-cofre-acento">
           Quadro Comparativo de Métricas
@@ -386,7 +362,7 @@ export function Resultado({
             </p>
             <dl className="divide-y divide-cofre-borda/50">
               {comparativo.map((linha, indice) => (
-                <div key={linha.produtoId} className="flex items-center justify-between px-3.5 py-2.5">
+                <div key={linha.produtoId} className="flex items-center justify-between px-3.5 py-2">
                   <dt
                     className={`text-sm ${
                       indice === 0 ? 'font-semibold text-cofre-acento' : 'text-cofre-texto'
@@ -429,13 +405,13 @@ export function Resultado({
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cofre-borda/80 text-left text-xs uppercase tracking-wider text-cofre-suave">
-                <th className="sticky left-0 z-10 bg-cofre-placa-clara px-4 py-3.5 font-semibold shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
+                <th className="sticky left-0 z-10 bg-cofre-placa-clara px-4 py-2 font-semibold shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
                   Critério
                 </th>
                 {comparativo.map((l, idx) => (
                   <th
                     key={l.produtoId}
-                    className={`px-4 py-3.5 font-bold normal-case tracking-normal ${
+                    className={`px-4 py-2 font-bold normal-case tracking-normal ${
                       idx === 0 ? 'text-cofre-acento' : 'text-cofre-texto'
                     }`}
                   >
@@ -463,7 +439,7 @@ export function Resultado({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.4 }}
-          className="relative overflow-hidden rounded-xl border border-cofre-acento/40 bg-gradient-to-r from-[#0C1F3F] via-[#122A54] to-[#0C1F3F] p-6 shadow-[0_8px_32px_-8px_rgba(212,162,78,0.25)]"
+          className="relative overflow-hidden rounded-xl border border-cofre-acento/40 bg-gradient-to-r from-[#0C1F3F] via-[#122A54] to-[#0C1F3F] p-4 shadow-[0_8px_32px_-8px_rgba(212,162,78,0.25)]"
         >
           {/* Backlight sutil no centro do banner */}
           <div className="pointer-events-none absolute right-1/4 top-0 h-32 w-48 rounded-full bg-cofre-acento/15 blur-3xl" />
@@ -496,69 +472,6 @@ export function Resultado({
         </motion.div>
       )}
 
-      {/* Alertas do Corretor */}
-      {(algumAbaixo || algumEstimado || indisponiveis.length > 0) && (
-        <div className="space-y-2 rounded-xl border border-cofre-alerta/35 bg-cofre-alerta/10 p-4.5 text-sm">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cofre-alerta">
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Observações Técnicas para o Assessor
-          </div>
-          {algumAbaixo && (
-            <p className="text-xs text-cofre-suave leading-relaxed">
-              • Em uma ou mais seguradoras o resgate no 10º ano não alcança o total aportado. O documento apresenta o 10º ano como referência comercial de quitação.
-            </p>
-          )}
-          {algumEstimado && (
-            <p className="text-xs text-cofre-suave leading-relaxed">
-              • Uma das tarifas foi estimada por interpolação matemática, não provinda de estudo oficial arquivado.
-            </p>
-          )}
-          {indisponiveis.map((i) => (
-            <p key={i.produtoId} className="text-xs text-cofre-suave leading-relaxed">
-              • {i.motivo}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {/* Lista completa de produtos cotados */}
-      <details className="group rounded-xl border border-cofre-borda bg-cofre-placa p-4 transition-all">
-        <summary className="-my-1.5 flex cursor-pointer items-center justify-between py-1.5 text-xs font-semibold uppercase tracking-wider text-cofre-suave hover:text-cofre-texto">
-          <span>
-            {todos.length === 1
-              ? 'Ver o único produto cotado'
-              : `Ver todos os ${todos.length} produtos cotados (incluindo sucessórios)`}
-          </span>
-          <span className="text-xs transition-transform group-open:rotate-180">▼</span>
-        </summary>
-        <ul className="mt-3.5 space-y-2 text-sm divide-y divide-cofre-borda/40">
-          {todos.map((p) => (
-            <li
-              key={p.produtoId}
-              className="flex items-center justify-between gap-4 pt-2.5"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-cofre-texto">{p.seguradora}</span>
-                <span className="text-xs text-cofre-suave">— {p.nome}</span>
-                {p.estimada && (
-                  <span className="rounded bg-cofre-alerta/15 px-1.5 py-0.5 text-xs text-cofre-alerta font-medium">
-                    estimada
-                  </span>
-                )}
-              </div>
-              <span className="whitespace-nowrap font-bold text-cofre-texto tabular-nums">
-                {p.aporteAnual}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </details>
     </div>
   )
 }
@@ -566,13 +479,13 @@ export function Resultado({
 function Linha({ titulo, valores }: { titulo: string; valores: string[] }) {
   return (
     <tr>
-      <th scope="row" className="sticky left-0 z-10 bg-cofre-placa px-4 py-3.5 text-left font-medium text-cofre-suave shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
+      <th scope="row" className="sticky left-0 z-10 bg-cofre-placa px-4 py-2 text-left font-medium text-cofre-suave shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
         {titulo}
       </th>
       {valores.map((valor, indice) => (
         <td
           key={indice}
-          className={`whitespace-nowrap px-4 py-3.5 tabular-nums ${
+          className={`whitespace-nowrap px-4 py-2 tabular-nums ${
             valor === 'não atinge'
               ? 'font-semibold text-cofre-alerta'
               : indice === 0
