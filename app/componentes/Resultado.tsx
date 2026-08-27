@@ -73,7 +73,6 @@ export function Resultado({
     )
   }
 
-  const { taxaIpca } = resultado
   const projetada = visao === 'ipca'
 
   /*
@@ -95,7 +94,7 @@ export function Resultado({
       valores: comparativo.map((l) => l.aporteAnual),
     },
     { titulo: 'Acumulado em 10 anos', valores: comparativo.map((l) => l.aporteAcumulado10a) },
-    { titulo: 'Custo vs capital segurado', valores: comparativo.map((l) => l.custoSobreCapital) },
+    { titulo: 'Custo vs capital', valores: comparativo.map((l) => l.custoSobreCapital) },
     { titulo: 'Resgate no 10º ano', valores: comparativo.map((l) => l.resgate10a) },
     {
       titulo: 'Break-even real',
@@ -192,11 +191,16 @@ export function Resultado({
        * Interruptor de correcao pelo IPCA.
        *
        * `role="switch"` e nao dois botoes: e uma chave de liga e desliga, e quem
-       * navega por teclado precisa ouvir isso. A ressalva ao lado nao e enfeite
-       * — sem ela o cliente le "R$ 891 mil de resgate" sem saber que e moeda de
-       * dez anos a frente.
+       * navega por teclado precisa ouvir isso.
+       *
+       * A ressalva sobre moeda futura saiu da tela. Ao lado do botao ela
+       * mudava de tamanho ao ligar o interruptor, crescia a linha e devolvia a
+       * rolagem que a tela tinha acabado de perder; nas observacoes tecnicas,
+       * a esquerda, fazia o mesmo por outro caminho, porque aquela coluna
+       * tambem estava no limite. Ela permanece onde de fato importa: no bloco
+       * de observacoes metodologicas do documento, que e o que o cliente leva.
        */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <button
           type="button"
           role="switch"
@@ -251,11 +255,6 @@ export function Resultado({
           </div>
         )}
 
-        <p className="text-xs leading-relaxed text-cofre-suave sm:ml-auto sm:max-w-xs sm:text-right">
-          {projetada
-            ? `Valores em moeda futura a ${taxaIpca} a.a., não em poder de compra de hoje. Corrigir aporte, resgate e capital pelo mesmo índice não altera o ranking.`
-            : 'Valores do estudo oficial de cada seguradora, sem projeção de inflação.'}
-        </p>
       </div>
 
       {/* Cards de Ranking com Backlight no 1º lugar */}
@@ -402,16 +401,20 @@ export function Resultado({
           </h3>
         </div>
         <div className="overflow-x-auto">
+          {/* Layout fixo com a coluna de criterios travada: no automatico, os
+              valores projetados — mais largos — inchavam as colunas de numeros,
+              espremiam o rotulo e quebravam cada linha em duas. A tabela crescia
+              80px so por ligar o interruptor, e a rolagem voltava. */}
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-cofre-borda/80 text-left text-xs uppercase tracking-wider text-cofre-suave">
-                <th className="sticky left-0 z-10 bg-cofre-placa-clara px-4 py-2 font-semibold shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
+                <th className="sticky left-0 z-10 whitespace-nowrap bg-cofre-placa-clara px-3 py-2 font-semibold shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
                   Critério
                 </th>
                 {comparativo.map((l, idx) => (
                   <th
                     key={l.produtoId}
-                    className={`px-4 py-2 font-bold normal-case tracking-normal ${
+                    className={`px-2.5 py-2 font-bold normal-case tracking-normal ${
                       idx === 0 ? 'text-cofre-acento' : 'text-cofre-texto'
                     }`}
                   >
@@ -479,13 +482,13 @@ export function Resultado({
 function Linha({ titulo, valores }: { titulo: string; valores: string[] }) {
   return (
     <tr>
-      <th scope="row" className="sticky left-0 z-10 bg-cofre-placa px-4 py-2 text-left font-medium text-cofre-suave shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
+      <th scope="row" className="sticky left-0 z-10 whitespace-nowrap bg-cofre-placa px-3 py-2 text-left font-medium text-cofre-suave shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
         {titulo}
       </th>
       {valores.map((valor, indice) => (
         <td
           key={indice}
-          className={`whitespace-nowrap px-4 py-2 tabular-nums ${
+          className={`whitespace-nowrap px-2.5 py-2 tabular-nums ${
             valor === 'não atinge'
               ? 'font-semibold text-cofre-alerta'
               : indice === 0
