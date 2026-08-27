@@ -43,7 +43,14 @@ export function Painel() {
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
             >
-              <Resultado resultado={resultado} dados={dados} />
+              <Resultado
+                resultado={resultado}
+                dados={dados}
+                aoRecalcular={(r, d) => {
+                  setResultado(r)
+                  setDados(d)
+                }}
+              />
             </motion.div>
           ) : (
             <motion.div

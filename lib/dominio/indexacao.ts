@@ -23,6 +23,9 @@ import Decimal from 'decimal.js'
  */
 export const IPCA_PADRAO = new Decimal('0.045')
 
+/** O padrao em pontos percentuais, como aparece e e digitado na tela ("4,5"). */
+export const TAXA_INICIAL = IPCA_PADRAO.times(100).toString().replace('.', ',')
+
 /** Faixa aceita. Acima disso nao e mais projecao, e especulacao. */
 export const IPCA_MAXIMO = new Decimal('0.20')
 

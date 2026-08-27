@@ -11,11 +11,8 @@ import {
   dataBrasileiraParaDate,
 } from '@/lib/formato'
 import { CampoMoeda } from './CampoMoeda'
-import { IPCA_PADRAO, taxaDePercentual } from '@/lib/dominio/indexacao'
+import { TAXA_INICIAL } from '@/lib/dominio/indexacao'
 import type { DadosFormulario, Sexo } from '@/lib/dominio/tipos'
-
-/** A meta do Banco Central, em pontos percentuais, como aparece no campo. */
-const TAXA_INICIAL = IPCA_PADRAO.times(100).toString().replace('.', ',')
 
 const ATALHOS_CAPITAL = [
   { rotulo: '500 mil', valor: '50000000' },
@@ -39,16 +36,13 @@ export function FormularioCotacao({ aoResultado }: Props) {
   const [sexo, setSexo] = useState<Sexo>('M')
   const [dataTexto, setDataTexto] = useState('')
   const [capital, setCapital] = useState('100000000') // R$ 1.000.000,00
-  const [taxaIpca, setTaxaIpca] = useState(TAXA_INICIAL)
   const [processando, iniciarTransicao] = useTransition()
 
   // Converte a data digitada DD/MM/AAAA para objeto Date
   const dataNascimento = dataBrasileiraParaDate(dataTexto)
   const idade = dataNascimento ? idadeEm(dataNascimento, new Date()) : null
   const idadeValida = idade !== null && idade >= 0 && idade <= 120
-  const taxaValida = taxaDePercentual(taxaIpca) !== null
-  const podeEnviar =
-    nome.trim().length > 0 && idadeValida && capital.length > 0 && taxaValida
+  const podeEnviar = nome.trim().length > 0 && idadeValida && capital.length > 0
 
   function aoMudarData(e: React.ChangeEvent<HTMLInputElement>) {
     setDataTexto(mascaraData(e.target.value))
@@ -58,7 +52,6 @@ export function FormularioCotacao({ aoResultado }: Props) {
     setNome('')
     setDataTexto('')
     setCapital('100000000')
-    setTaxaIpca(TAXA_INICIAL)
     aoResultado(null, null)
   }
 
@@ -73,9 +66,14 @@ export function FormularioCotacao({ aoResultado }: Props) {
         sexo,
         idade,
         capital: valor,
-        taxaIpca,
+        // A taxa comeca no padrao e passa a ser ajustada no proprio interruptor,
+        // ao lado do resultado: e la que ela vira numero na tela.
+        taxaIpca: TAXA_INICIAL,
       }
-      aoResultado(await cotarComparativo({ sexo, idade, capital: valor, taxaIpca }), dados)
+      aoResultado(
+        await cotarComparativo({ sexo, idade, capital: valor, taxaIpca: TAXA_INICIAL }),
+        dados,
+      )
     })
   }
 
@@ -209,41 +207,6 @@ export function FormularioCotacao({ aoResultado }: Props) {
           </div>
         </div>
 
-        {/*
-         * A taxa fica no formulario, e nao escondida atras do toggle: ela e um
-         * pressuposto do estudo, nao uma preferencia de exibicao. O corretor
-         * escolhe o cenario antes de calcular, e a taxa usada vai impressa no
-         * documento.
-         */}
-        <div className="sm:col-span-2">
-          <label htmlFor="ipca" className={rotulo}>
-            IPCA anual para projeção
-          </label>
-          <div className="relative">
-            <input
-              id="ipca"
-              type="text"
-              inputMode="decimal"
-              maxLength={5}
-              value={taxaIpca}
-              onChange={(e) => setTaxaIpca(e.target.value)}
-              placeholder="4,5"
-              className={campo}
-              autoComplete="off"
-              aria-describedby="ipca-ajuda"
-            />
-            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-cofre-suave">
-              % a.a.
-            </span>
-          </div>
-          <p id="ipca-ajuda" className="mt-1.5 text-xs text-cofre-suave">
-            {taxaValida ? (
-              'Usada apenas na visão corrigida. Zero equivale ao nominal.'
-            ) : (
-              <span className="text-cofre-perigo">Informe uma taxa entre 0 e 20%.</span>
-            )}
-          </p>
-        </div>
       </div>
 
       <motion.button

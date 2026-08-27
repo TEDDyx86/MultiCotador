@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import type { Resultado as TipoResultado } from '@/app/acoes'
+import { cotarComparativo, type Resultado as TipoResultado } from '@/app/acoes'
+import { TAXA_INICIAL, taxaDePercentual } from '@/lib/dominio/indexacao'
 import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
 import { ValorAnimado } from './ValorAnimado'
 
@@ -33,13 +34,43 @@ const entrada = {
 export function Resultado({
   resultado,
   dados,
+  aoRecalcular,
 }: {
   resultado: TipoResultado
   dados: DadosFormulario | null
+  aoRecalcular?: (resultado: TipoResultado, dados: DadosFormulario) => void
 }) {
   const [gerando, setGerando] = useState(false)
   const [erroPdf, setErroPdf] = useState('')
   const [visao, setVisao] = useState<Visao>('nominal')
+  const [taxa, setTaxa] = useState(dados?.taxaIpca ?? TAXA_INICIAL)
+  const [recalculando, iniciarRecalculo] = useTransition()
+
+  /*
+   * Trocar a taxa refaz a conta no servidor, onde a tabela de tarifas vive.
+   * Espera meio segundo depois da ultima tecla: sem isso, digitar "12" dispara
+   * uma cotacao para "1" e outra para "12", e a primeira pode chegar depois.
+   */
+  useEffect(() => {
+    if (!dados || !aoRecalcular) return
+    if (taxa === dados.taxaIpca) return
+    if (taxaDePercentual(taxa) === null) return
+    const relogio = setTimeout(() => {
+      iniciarRecalculo(async () => {
+        const atualizado = { ...dados, taxaIpca: taxa }
+        aoRecalcular(
+          await cotarComparativo({
+            sexo: dados.sexo,
+            idade: dados.idade,
+            capital: dados.capital,
+            taxaIpca: taxa,
+          }),
+          atualizado,
+        )
+      })
+    }, 500)
+    return () => clearTimeout(relogio)
+  }, [taxa, dados, aoRecalcular])
   const router = useRouter()
   const nome = dados?.nome ?? ''
   if (!resultado.ok) {
@@ -209,15 +240,44 @@ export function Resultado({
               }`}
             />
           </span>
-          <span className="text-xs font-semibold text-cofre-texto">
-            Corrigir por IPCA
-            <span className="ml-1 font-normal text-cofre-suave">{taxaIpca} a.a.</span>
-          </span>
+          <span className="text-xs font-semibold text-cofre-texto">Corrigir por IPCA</span>
         </button>
 
-        <p className="text-xs leading-relaxed text-cofre-suave sm:max-w-sm sm:text-right">
+        {/*
+         * A taxa so existe quando o interruptor esta ligado: desligada ela nao
+         * governa nada, e um campo sem efeito ao lado de uma chave desligada e
+         * convite a duvida sobre o que a tela esta mostrando.
+         */}
+        {projetada && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="ipca" className="text-xs text-cofre-suave">
+              Taxa
+            </label>
+            <div className="relative">
+              <input
+                id="ipca"
+                type="text"
+                inputMode="decimal"
+                maxLength={5}
+                value={taxa}
+                onChange={(e) => setTaxa(e.target.value)}
+                aria-invalid={taxaDePercentual(taxa) === null}
+                className="w-24 rounded-md border border-cofre-borda bg-[#061224] py-1.5 pl-2.5 pr-12 text-xs text-cofre-texto shadow-inner outline-none focus:border-cofre-acento focus:ring-1 focus:ring-cofre-acento/40"
+              />
+              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-cofre-suave">
+                % a.a.
+              </span>
+            </div>
+            {recalculando && <span className="text-xs text-cofre-suave">recalculando…</span>}
+            {taxaDePercentual(taxa) === null && (
+              <span className="text-xs text-cofre-perigo">0 a 20%</span>
+            )}
+          </div>
+        )}
+
+        <p className="text-xs leading-relaxed text-cofre-suave sm:ml-auto sm:max-w-xs sm:text-right">
           {projetada
-            ? 'Valores em moeda futura, não em poder de compra de hoje. Corrigir aporte, resgate e capital pelo mesmo índice não altera o ranking.'
+            ? `Valores em moeda futura a ${taxaIpca} a.a., não em poder de compra de hoje. Corrigir aporte, resgate e capital pelo mesmo índice não altera o ranking.`
             : 'Valores do estudo oficial de cada seguradora, sem projeção de inflação.'}
         </p>
       </div>
