@@ -3,6 +3,7 @@ import Decimal from 'decimal.js'
 import {
   ANOS_PROJECAO,
   IPCA_PADRAO,
+  TAXA_INICIAL,
   fatorCustoSobreCapital,
   fatorSerieAportes,
   fatorValorFuturo,
@@ -47,8 +48,16 @@ describe('fatores de indexacao', () => {
     expect(new Decimal('57.2').times(f).toDecimalPlaces(1).toString()).toBe('44.2')
   })
 
-  it('usa a meta do Banco Central como ponto de partida', () => {
-    expect(IPCA_PADRAO.times(100).toString()).toBe('4.5')
+  it('parte de 5% ao ano, a taxa definida pela area comercial', () => {
+    expect(IPCA_PADRAO.times(100).toString()).toBe('5')
+  })
+
+  // O campo da tela nasce com o padrao ja escrito. Se o formato sair errado
+  // ("5.0", "0.05"), o input abre invalido e a projecao cai no padrao em
+  // silencio — o mesmo numero na tela, por outro caminho, sem ninguem notar.
+  it('escreve o padrao na tela como o corretor digitaria', () => {
+    expect(TAXA_INICIAL).toBe('5')
+    expect(taxaDePercentual(TAXA_INICIAL)?.toString()).toBe('0.05')
   })
 })
 

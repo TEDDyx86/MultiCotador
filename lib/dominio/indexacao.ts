@@ -18,12 +18,16 @@ import Decimal from 'decimal.js'
  */
 
 /**
- * Meta de inflacao do Banco Central. Serve de ponto de partida, nao de verdade:
- * a taxa e editavel na tela e a que foi usada vai impressa no documento.
+ * Taxa de partida das projecoes, definida pela area comercial. Serve de ponto de
+ * partida, nao de verdade: a taxa e editavel na tela e a que foi usada vai
+ * impressa no documento.
+ *
+ * Era 4,5% — o teto da banda da meta do Banco Central. Passou a 5% por decisao
+ * de negocio, para nao projetar abaixo do que a inflacao corrente vem entregando.
  */
-export const IPCA_PADRAO = new Decimal('0.045')
+export const IPCA_PADRAO = new Decimal('0.05')
 
-/** O padrao em pontos percentuais, como aparece e e digitado na tela ("4,5"). */
+/** O padrao em pontos percentuais, como aparece e e digitado na tela ("5"). */
 export const TAXA_INICIAL = IPCA_PADRAO.times(100).toString().replace('.', ',')
 
 /** Faixa aceita. Acima disso nao e mais projecao, e especulacao. */
