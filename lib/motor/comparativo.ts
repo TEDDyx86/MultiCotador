@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js'
 import { BREAKEVEN_DOCUMENTO, CAPITAL_BASE, brl } from '@/lib/dominio/regras'
-import type { FonteTarifa, Sexo } from '@/lib/dominio/tipos'
+import type { FonteTarifa, Modalidade, Sexo } from '@/lib/dominio/tipos'
 import type { Repositorio } from '@/lib/repositorio/repositorio'
 import { TarifaIndisponivel, cotar } from './cotacao'
 
@@ -25,6 +25,27 @@ export interface Comparativo {
   /** Diferenca acumulada entre a opcao mais cara e a recomendada. */
   valorPreservado: Decimal
   indisponiveis: Array<{ produtoId: string; motivo: string }>
+  /** Qual familia de produto estas linhas comparam. */
+  modalidade: Modalidade
+}
+
+/**
+ * Quais produtos entram em cada modalidade.
+ *
+ * As duas regras sao assimetricas de proposito. `com-resgate` continua
+ * governada por `entraNoComparativo`, a curadoria manual do comparativo
+ * principal — o `temResgate` junto e redundante hoje e existe como trava: um
+ * produto sem reserva marcado por engano nao vaza para a tabela onde as linhas
+ * de resgate e break-even sao impressas. `sem-resgate` pega todo produto sem
+ * reserva, porque ali nao ha curadoria a fazer: sao os dois que existem.
+ */
+function entraNaModalidade(
+  produto: { entraNoComparativo: boolean; temResgate: boolean },
+  modalidade: Modalidade,
+): boolean {
+  return modalidade === 'com-resgate'
+    ? produto.entraNoComparativo && produto.temResgate
+    : !produto.temResgate
 }
 
 export function montarComparativo(
@@ -32,12 +53,13 @@ export function montarComparativo(
   sexo: Sexo,
   idade: number,
   capital: Decimal,
+  modalidade: Modalidade = 'com-resgate',
 ): Comparativo {
   const linhas: LinhaComparativo[] = []
   const indisponiveis: Array<{ produtoId: string; motivo: string }> = []
 
   for (const produto of repo.produtos()) {
-    if (!produto.entraNoComparativo) continue
+    if (!entraNaModalidade(produto, modalidade)) continue
 
     let cotacao
     try {
@@ -79,5 +101,5 @@ export function montarComparativo(
       ? brl(linhas[linhas.length - 1].aporteAcumulado10a.minus(linhas[0].aporteAcumulado10a))
       : new Decimal(0)
 
-  return { linhas, valorPreservado, indisponiveis }
+  return { linhas, valorPreservado, indisponiveis, modalidade }
 }

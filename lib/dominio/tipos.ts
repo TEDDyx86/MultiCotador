@@ -82,3 +82,13 @@ export interface DadosFormulario {
  * muda o poder de compra nem o ranking, so a unidade.
  */
 export type Visao = 'nominal' | 'ipca'
+
+/**
+ * Qual familia de produto o comparativo esta cotando.
+ *
+ * Sao dois mercados, nao duas colunas do mesmo: `sem-resgate` nao forma reserva
+ * e por isso sai bem mais barato. Compara-los na mesma tabela leva direto a
+ * conclusao errada — o mais barato ganha, e ele nao devolve nada em vida. Por
+ * isso o comparativo troca de conjunto inteiro em vez de somar colunas.
+ */
+export type Modalidade = 'com-resgate' | 'sem-resgate'

@@ -12,7 +12,7 @@
  * 0,4pt de excesso inexistente, so por causa do arredondamento do viewport
  * (1123px = 842,25pt contra 841,89pt de A4).
  *
- * Uso: npx tsx scripts/medir-pdf.ts ["Nome do cliente"] [capital] [nominal|ipca]
+ * Uso: npx tsx scripts/medir-pdf.ts ["Nome"] [capital] [nominal|ipca] [modalidade]
  *
  * Nome e capital entram por argumento porque sao as duas entradas capazes de
  * mudar a altura: um nome longo empurra a chamada para uma segunda linha, e um
@@ -32,7 +32,8 @@ const ALTURA_A4_PT = 841.9
 async function main() {
   const capital = new Decimal(process.argv[3] ?? '1000000')
   const projetada = process.argv[4] === 'ipca'
-  const nominal = montarComparativo(repositorioJson, 'M', 50, capital)
+  const modalidade = process.argv[5] === 'sem-resgate' ? 'sem-resgate' : 'com-resgate'
+  const nominal = montarComparativo(repositorioJson, 'M', 50, capital, modalidade)
   const c = projetada ? projetarPorIpca(nominal, IPCA_PADRAO) : nominal
 
   const html = montarHtml({
@@ -42,6 +43,7 @@ async function main() {
     capitalFormatado: moeda(capital),
     valorPreservado: moeda(c.valorPreservado),
     projetada,
+    modalidade,
     taxaIpca: percentual(IPCA_PADRAO.times(100)),
     comparativo: c.linhas.map((l) => ({
       produtoId: l.produtoId,

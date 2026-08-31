@@ -5,6 +5,7 @@ import { projetarPorIpca } from '@/lib/motor/projecao'
 import { repositorioJson as repo } from '@/lib/repositorio/repositorioJson'
 import { moeda, percentual } from '@/lib/formato'
 import { montarHtml } from '@/lib/pdf/template'
+import type { Modalidade } from '@/lib/dominio/tipos'
 
 /**
  * Testa o HTML do documento, nao o PDF renderizado: abrir o Chromium levaria
@@ -12,9 +13,14 @@ import { montarHtml } from '@/lib/pdf/template'
  * aqui e que os numeros certos chegam ao papel — o layout foi conferido contra o
  * PDF de referencia medindo a grade dos dois.
  */
-function htmlDoCaso(sexo: 'M' | 'F', idade: number, capital: string, extras = {}) {
+function htmlDoCaso(
+  sexo: 'M' | 'F',
+  idade: number,
+  capital: string,
+  extras: { modalidade?: Modalidade; [chave: string]: unknown } = {},
+) {
   const valor = new Decimal(capital)
-  const comp = montarComparativo(repo, sexo, idade, valor)
+  const comp = montarComparativo(repo, sexo, idade, valor, extras.modalidade)
   return montarHtml({
     nome: 'John Daniel',
     idade,
@@ -245,6 +251,52 @@ describe('documento — visao corrigida por IPCA', () => {
     expect(html).toContain('Valores nominais')
     expect(html).not.toContain('Valores projetados')
     expect(html.match(/<li>/g)?.length).toBe(4)
+  })
+})
+
+describe('documento — modalidade sem resgate', () => {
+  const html = htmlDoCaso('M', 50, '1000000', { modalidade: 'sem-resgate' })
+
+  it('compara apenas os dois produtos sem reserva', () => {
+    expect(html).toContain('2 seguradoras')
+    // Ancorado na aspa de fecho: `<div class="card` sozinho casa tambem o
+    // contentor `<div class="cards">` e o teste passaria a contar tres.
+    expect(html.match(/<div class="card(?: rec)?">/g)?.length).toBe(2)
+  })
+
+  /*
+   * As duas linhas nao podem sair zeradas: "R$ 0,00" num documento assinado le
+   * como resgate frustrado, e nao como produto que nunca prometeu resgate.
+   */
+  it('omite as linhas de resgate e break-even em vez de zera-las', () => {
+    expect(html).not.toContain('Break-even do Resgate')
+    expect(html).not.toContain('Valor de Resgate no 10º Ano')
+    expect(html).not.toContain('R$ 0,00')
+    expect(html).not.toContain('10º ano')
+  })
+
+  /*
+   * O quadro afirmava "Direito de resgate" em folha entregue ao cliente. Nestes
+   * produtos a frase e simplesmente falsa.
+   */
+  it('troca o quadro de caracteristicas que seria falso', () => {
+    expect(html).not.toContain('Direito de resgate')
+    expect(html).not.toContain('Formação de reserva resgatável')
+    expect(html).toContain('Proteção pura, sem reserva')
+  })
+
+  it('substitui a nota do break-even sem mudar a contagem de itens', () => {
+    expect(html).toContain('Sem formação de reserva')
+    expect(html.match(/<li>/g)?.length).toBe(4)
+    // Sem as linhas marcadas, nao pode sobrar chamada de nota orfa na folha.
+    expect(html).not.toContain('<sup>1</sup>')
+  })
+
+  it('mantem intacta a modalidade principal', () => {
+    const principal = htmlDoCaso('M', 50, '1000000')
+    expect(principal).toContain('Break-even do Resgate<sup>1</sup>')
+    expect(principal).toContain('Direito de resgate')
+    expect(principal).toContain('4 seguradoras')
   })
 })
 

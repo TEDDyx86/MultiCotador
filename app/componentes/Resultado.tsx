@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import type { Resultado as TipoResultado } from '@/app/acoes'
+import type { GrupoResultado, Resultado as TipoResultado } from '@/app/acoes'
 import { taxaDePercentual } from '@/lib/dominio/indexacao'
-import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
+import type { DadosFormulario, Modalidade, Visao } from '@/lib/dominio/tipos'
 import { ValorAnimado } from './ValorAnimado'
 
 /*
@@ -31,19 +31,41 @@ const entrada = {
   }),
 }
 
+/*
+ * Quantas colunas o ranking abre no desktop.
+ *
+ * O nome da classe e escrito por extenso porque o Tailwind varre o codigo como
+ * texto: `lg:grid-cols-${n}` nunca chega ao CSS gerado, e a grade cairia
+ * silenciosamente para uma coluna so.
+ */
+const COLUNAS_RANKING: Record<number, string> = {
+  1: 'lg:grid-cols-1',
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+}
+const COLUNAS_RANKING_PADRAO = 'lg:grid-cols-4'
+
 export function Resultado({
   resultado,
+  grupo,
   dados,
   visao,
   aoTrocarVisao,
+  modalidade,
+  aoTrocarModalidade,
+  temSemResgate,
   taxa,
   aoTrocarTaxa,
   recalculando,
 }: {
   resultado: TipoResultado
+  grupo: GrupoResultado | null
   dados: DadosFormulario | null
   visao: Visao
   aoTrocarVisao: (v: Visao) => void
+  modalidade: Modalidade
+  aoTrocarModalidade: (m: Modalidade) => void
+  temSemResgate: boolean
   taxa: string
   aoTrocarTaxa: (t: string) => void
   recalculando: boolean
@@ -52,7 +74,7 @@ export function Resultado({
   const [erroPdf, setErroPdf] = useState('')
   const router = useRouter()
   const nome = dados?.nome ?? ''
-  if (!resultado.ok) {
+  if (!resultado.ok || !grupo) {
     return (
       <div
         role="alert"
@@ -68,7 +90,12 @@ export function Resultado({
           </svg>
           Não foi possível simular
         </div>
-        <p className="text-cofre-suave">{resultado.erro}</p>
+        {/* O grupo ausente com a cotacao ok nao deveria acontecer — a acao ja
+            derruba a cotacao quando a modalidade principal fica vazia. A
+            mensagem existe para o caso nao chegar aqui como tela em branco. */}
+        <p className="text-cofre-suave">
+          {resultado.ok ? 'Nenhum produto para exibir nesta aba.' : resultado.erro}
+        </p>
       </div>
     )
   }
@@ -79,10 +106,9 @@ export function Resultado({
    * As duas visoes chegaram juntas do servidor, entao alternar e so trocar de
    * lista — sem espera e sem nova ida ao servidor no meio de uma reuniao.
    */
-  const comparativo = projetada ? resultado.projetado : resultado.comparativo
-  const valorPreservado = projetada
-    ? resultado.valorPreservadoProjetado
-    : resultado.valorPreservado
+  const comparativo = projetada ? grupo.projetado : grupo.comparativo
+  const valorPreservado = projetada ? grupo.valorPreservadoProjetado : grupo.valorPreservado
+  const comResgate = grupo.modalidade === 'com-resgate'
 
   // Uma unica fonte para a tabela do desktop e a lista do telefone: sao duas
   // apresentacoes do mesmo quadro, e nao podem divergir quando um criterio mudar.
@@ -95,13 +121,22 @@ export function Resultado({
     },
     { titulo: 'Acumulado em 10 anos', valores: comparativo.map((l) => l.aporteAcumulado10a) },
     { titulo: 'Custo vs capital', valores: comparativo.map((l) => l.custoSobreCapital) },
-    { titulo: 'Resgate no 10º ano', valores: comparativo.map((l) => l.resgate10a) },
-    {
-      titulo: 'Break-even real',
-      valores: comparativo.map((l) =>
-        l.breakevenReal === null ? 'não atinge' : `${l.breakevenReal}º ano`,
-      ),
-    },
+    /*
+     * As duas ultimas linhas so existem onde ha reserva. Imprimi-las zeradas na
+     * outra modalidade seria pior que omiti-las: "R$ 0,00" se le como resgate
+     * que deu errado, e nao como produto que nunca prometeu resgate.
+     */
+    ...(comResgate
+      ? [
+          { titulo: 'Resgate no 10º ano', valores: comparativo.map((l) => l.resgate10a) },
+          {
+            titulo: 'Break-even real',
+            valores: comparativo.map((l) =>
+              l.breakevenReal === null ? 'não atinge' : `${l.breakevenReal}º ano`,
+            ),
+          },
+        ]
+      : []),
   ]
 
   async function emitirPdf() {
@@ -112,9 +147,9 @@ export function Resultado({
       const resposta = await fetch('/api/comparativo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // O documento sai na visao que esta na tela: o corretor imprime o que
-        // acabou de mostrar ao cliente, e nao uma terceira versao.
-        body: JSON.stringify({ ...dados, visao }),
+        // O documento sai na visao e na aba que estao na tela: o corretor
+        // imprime o que acabou de mostrar ao cliente, e nao uma terceira versao.
+        body: JSON.stringify({ ...dados, visao, modalidade }),
       })
       // A sessao dura oito horas e pode vencer com a tela aberta. Mostrar
       // "sessao expirada" ao lado de um resultado que continua na tela deixaria
@@ -200,6 +235,67 @@ export function Resultado({
        * tambem estava no limite. Ela permanece onde de fato importa: no bloco
        * de observacoes metodologicas do documento, que e o que o cliente leva.
        */}
+      {/*
+       * Abas de modalidade. Ficam na mesma linha do interruptor de IPCA porque
+       * a tela foi calibrada para nao rolar: uma faixa propria custaria mais
+       * 44px e devolveria a rolagem que a pagina tinha acabado de perder.
+       *
+       * `role="tablist"` e nao dois botoes soltos: sao dois conjuntos de
+       * produtos excludentes, e quem navega por teclado precisa ouvir que
+       * escolher um substitui o outro.
+       */}
+      <div
+        role="tablist"
+        aria-label="Modalidade do comparativo"
+        className="inline-flex rounded-lg border border-cofre-borda bg-cofre-placa p-0.5"
+      >
+        {(
+          [
+            ['com-resgate', 'Com resgate'],
+            ['sem-resgate', 'Sem resgate'],
+          ] as const
+        ).map(([valor, texto]) => {
+          const ativa = modalidade === valor
+          // A aba sem resgate morre quando nenhum dos dois produtos cota na
+          // idade: o Legado da MetLife para aos 70 anos.
+          const indisponivel = valor === 'sem-resgate' && !temSemResgate
+          return (
+            <button
+              key={valor}
+              type="button"
+              role="tab"
+              aria-selected={ativa}
+              disabled={indisponivel}
+              title={
+                indisponivel
+                  ? 'Nenhum produto sem formação de reserva cota nesta idade.'
+                  : undefined
+              }
+              onClick={() => aoTrocarModalidade(valor)}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                ativa
+                  ? 'bg-cofre-acento/15 text-cofre-acento shadow-sm'
+                  : 'text-cofre-suave hover:text-cofre-texto'
+              } disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:text-cofre-suave`}
+            >
+              {texto}
+            </button>
+          )
+        })}
+      </div>
+
+      {/*
+       * O aviso so aparece na aba secundaria. Na principal ele seria ruido
+       * permanente sobre algo que o corretor ja sabe.
+       */}
+      {!comResgate && (
+        <p className="rounded-md border border-cofre-alerta/35 bg-cofre-alerta/10 px-3 py-2 text-xs leading-snug text-cofre-suave">
+          Produtos <b className="text-cofre-alerta">sem formação de reserva</b>: não há resgate
+          nem break-even. O aporte é menor porque o contrato cobre apenas o risco — não
+          compare estes valores com os da aba anterior.
+        </p>
+      )}
+
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <button
           type="button"
@@ -264,7 +360,11 @@ export function Resultado({
        * primeira pergunta do corretor. Lado a lado, a comparacao acontece sem
        * rolar.
        */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-3.5 lg:grid-cols-4">
+      <div
+        className={`grid grid-cols-2 gap-3 sm:gap-3.5 ${
+          COLUNAS_RANKING[comparativo.length] ?? COLUNAS_RANKING_PADRAO
+        }`}
+      >
         {comparativo.map((linha, indice) => {
           const ehPrimeiro = indice === 0
           return (

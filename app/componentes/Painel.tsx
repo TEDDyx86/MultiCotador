@@ -7,20 +7,35 @@ import { Resultado } from './Resultado'
 import { ApoioResultado } from './ApoioResultado'
 import { cotarComparativo, type Resultado as TipoResultado } from '@/app/acoes'
 import { TAXA_INICIAL, taxaDePercentual } from '@/lib/dominio/indexacao'
-import type { DadosFormulario, Visao } from '@/lib/dominio/tipos'
+import type { DadosFormulario, Modalidade, Visao } from '@/lib/dominio/tipos'
 
 export function Painel() {
   const [resultado, setResultado] = useState<TipoResultado | null>(null)
   const [dados, setDados] = useState<DadosFormulario | null>(null)
   /*
-   * A visao e a taxa moram aqui, e nao dentro do resultado, porque as duas
-   * colunas dependem delas: o quadro comparativo a direita e as observacoes
-   * tecnicas a esquerda, que mudam conforme o resgate alcance ou nao o
-   * aportado na moeda escolhida.
+   * A visao, a taxa e a modalidade moram aqui, e nao dentro do resultado,
+   * porque as duas colunas dependem delas: o quadro comparativo a direita e as
+   * observacoes tecnicas a esquerda, que mudam conforme o resgate alcance ou
+   * nao o aportado na moeda escolhida.
    */
   const [visao, setVisao] = useState<Visao>('nominal')
+  const [modalidade, setModalidade] = useState<Modalidade>('com-resgate')
   const [taxa, setTaxa] = useState(TAXA_INICIAL)
   const [recalculando, iniciarRecalculo] = useTransition()
+
+  /*
+   * A aba escolhida so vale para o cliente que estava na tela. Sem voltar para
+   * a principal, um cliente de 72 anos cotado logo depois de um de 40 cairia
+   * numa aba "sem resgate" que nao existe na idade dele — o Legado da MetLife
+   * para aos 70 — e a tela apresentaria o comparativo principal sob um rotulo
+   * errado.
+   */
+  const grupo =
+    resultado?.ok && modalidade === 'sem-resgate' && resultado.semResgate
+      ? resultado.semResgate
+      : resultado?.ok
+        ? resultado.comResgate
+        : null
 
   /*
    * Trocar a taxa refaz a conta no servidor, onde a tabela de tarifas vive.
@@ -68,11 +83,12 @@ export function Painel() {
           aoResultado={(r, d) => {
             setResultado(r)
             setDados(d)
+            setModalidade('com-resgate')
           }}
         />
-        {resultado?.ok && (
+        {resultado?.ok && grupo && (
           <ApoioResultado
-            comparativo={visao === 'ipca' ? resultado.projetado : resultado.comparativo}
+            comparativo={visao === 'ipca' ? grupo.projetado : grupo.comparativo}
             todos={resultado.todos}
             indisponiveis={resultado.indisponiveis}
           />
@@ -91,9 +107,13 @@ export function Painel() {
             >
               <Resultado
                 resultado={resultado}
+                grupo={grupo}
                 dados={dados}
                 visao={visao}
                 aoTrocarVisao={setVisao}
+                modalidade={modalidade}
+                aoTrocarModalidade={setModalidade}
+                temSemResgate={resultado.ok && resultado.semResgate !== null}
                 taxa={taxa}
                 aoTrocarTaxa={setTaxa}
                 recalculando={recalculando}

@@ -7,7 +7,7 @@ import { repositorioJson } from '@/lib/repositorio/repositorioJson'
 import { moeda, percentual } from '@/lib/formato'
 import { montarHtml } from '@/lib/pdf/template'
 import { gerarPdf } from '@/lib/pdf/navegador'
-import type { Sexo } from '@/lib/dominio/tipos'
+import type { Modalidade, Sexo } from '@/lib/dominio/tipos'
 
 // Puppeteer e o acesso ao filesystem (fontes e logos) exigem Node.
 export const runtime = 'nodejs'
@@ -21,6 +21,7 @@ interface Corpo {
   capital?: unknown
   visao?: unknown
   taxaIpca?: unknown
+  modalidade?: unknown
 }
 
 function texto(valor: unknown): string | undefined {
@@ -53,7 +54,15 @@ export async function POST(requisicao: Request) {
     return NextResponse.json({ erro: 'O capital segurado deve ser maior que zero.' }, { status: 400 })
   }
 
-  const comparativo = montarComparativo(repositorioJson, sexo, idade, capital)
+  /*
+   * A modalidade e revalidada aqui pelo mesmo motivo da visao: nada garante que
+   * a chamada partiu da tela. Qualquer coisa fora de "sem-resgate" cai na
+   * modalidade principal, que e a que o documento sempre soube imprimir.
+   */
+  const modalidade: Modalidade =
+    corpo.modalidade === 'sem-resgate' ? 'sem-resgate' : 'com-resgate'
+
+  const comparativo = montarComparativo(repositorioJson, sexo, idade, capital, modalidade)
   if (comparativo.linhas.length === 0) {
     return NextResponse.json(
       { erro: `Nenhuma seguradora cota aos ${idade} anos com esse capital.` },
@@ -88,6 +97,7 @@ export async function POST(requisicao: Request) {
     capitalFormatado: moeda(capital),
     valorPreservado: moeda(escolhido.valorPreservado),
     projetada,
+    modalidade,
     taxaIpca: percentual(taxa.times(100)),
     comparativo: escolhido.linhas.map((l) => ({
       produtoId: l.produtoId,
@@ -100,7 +110,10 @@ export async function POST(requisicao: Request) {
       breakevenDocumento: l.breakevenDocumento,
       breakevenReal: l.breakevenReal,
       resgate10a: moeda(l.resgate10a),
-      resgateAbaixoDoAportado: l.resgate10a.lessThan(l.aporteAcumulado10a),
+      // Sem reserva o resgate e zero, e zero e menor que qualquer aporte: a
+      // comparacao daria "abaixo do aportado" para todo produto da modalidade.
+      resgateAbaixoDoAportado:
+        modalidade === 'com-resgate' && l.resgate10a.lessThan(l.aporteAcumulado10a),
       estimada: l.fonteTarifa === 'ESTIMADO',
     })),
   })

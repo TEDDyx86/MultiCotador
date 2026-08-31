@@ -1,5 +1,6 @@
 import { fonteNegrito, fonteRegular, fonteSerifItalica, logoBlue3, logoRt } from './ativos'
 import type { LinhaResultado } from '@/app/acoes'
+import type { Modalidade } from '@/lib/dominio/tipos'
 
 /**
  * Reproduz o layout do estudo Comparativo-WholeLife.
@@ -59,8 +60,10 @@ export interface DadosDocumento {
   valorPreservado: string
   /** Verdadeiro quando os valores estao reexpressos em moeda futura. */
   projetada?: boolean
-  /** A taxa usada na projecao, ja formatada ("4,5%"). */
+  /** A taxa usada na projecao, ja formatada ("5,0%"). */
   taxaIpca?: string
+  /** Ausente equivale a `com-resgate`, a modalidade que o documento sempre teve. */
+  modalidade?: Modalidade
 }
 
 function escapar(texto: string): string {
@@ -122,7 +125,13 @@ function diferenca(linha: LinhaResultado, referencia: LinhaResultado): string {
   return `+ R$ ${reais} (+${pct.toFixed(1).replace('.', ',')}%)`
 }
 
-const CARACTERISTICAS = [
+/**
+ * Os tres primeiros quadros valem para as duas modalidades. O quarto nao: o
+ * documento afirmava "direito de resgate" em folha assinada, e nos produtos sem
+ * reserva isso e simplesmente falso. E o unico texto fixo do modelo que a
+ * modalidade obriga a trocar.
+ */
+const CARACTERISTICAS_COMUNS = [
   [
     'Vigência vitalícia com aporte em 10 anos',
     'Aporte concentrado em período determinado, com cobertura que se estende por toda a vida do segurado.',
@@ -135,16 +144,28 @@ const CARACTERISTICAS = [
     'Underwriting e congelamento do risco',
     'Análise prévia de saúde na contratação e preservação das condições contratuais ao longo da vigência.',
   ],
-  [
-    'Direito de resgate',
-    'Formação de reserva resgatável a partir do 25º mês, oferecendo liquidez financeira ao segurado em vida.',
-  ],
+]
+
+const CARACTERISTICA_COM_RESGATE = [
+  'Direito de resgate',
+  'Formação de reserva resgatável a partir do 25º mês, oferecendo liquidez financeira ao segurado em vida.',
+]
+
+const CARACTERISTICA_SEM_RESGATE = [
+  'Proteção pura, sem reserva',
+  'O aporte custeia integralmente a cobertura. Não há formação de reserva nem valor de resgate em vida — daí o custo anual menor.',
 ]
 
 export function montarHtml(dados: DadosDocumento): string {
   const { comparativo: linhas } = dados
   const recomendada = linhas[0]
   const perfil = `${dados.sexo === 'M' ? 'Masculino' : 'Feminino'}, ${dados.idade} anos`
+  const comResgate = dados.modalidade !== 'sem-resgate'
+
+  const caracteristicas = [
+    ...CARACTERISTICAS_COMUNS,
+    comResgate ? CARACTERISTICA_COM_RESGATE : CARACTERISTICA_SEM_RESGATE,
+  ]
 
   const cabecalhoTabela = linhas
     .map((l, i) =>
@@ -407,14 +428,24 @@ export function montarHtml(dados: DadosDocumento): string {
           'Custo vs Capital Segurado',
           linhas.map((l) => l.custoSobreCapital),
         )}
-        ${linhaTabela(
-          'Break-even do Resgate<sup>1</sup>',
-          linhas.map((l) => `${l.breakevenDocumento}º ano`),
-        )}
+        ${
+          /*
+           * Sem reserva nao ha o que apresentar nestas duas linhas. Imprimi-las
+           * zeradas seria pior que omiti-las: "R$ 0,00" num documento assinado
+           * le como resgate frustrado, e nao como produto que nunca prometeu
+           * resgate. Some com elas a nota de rodape 1, que so as explicava.
+           */
+          comResgate
+            ? `${linhaTabela(
+                'Break-even do Resgate<sup>1</sup>',
+                linhas.map((l) => `${l.breakevenDocumento}º ano`),
+              )}
         ${linhaTabela(
           'Valor de Resgate no 10º Ano<sup>1</sup>',
           linhas.map((l) => l.resgate10a),
-        )}
+        )}`
+            : ''
+        }
       </tbody>
     </table>
 
@@ -434,7 +465,7 @@ export function montarHtml(dados: DadosDocumento): string {
 
     <h2>Características do Whole Life</h2><div class="regua"></div>
     <div class="caracteristicas">
-      ${CARACTERISTICAS.map(([t, d]) => `<div><h3>${t}</h3><p>${d}</p></div>`).join('')}
+      ${caracteristicas.map(([t, d]) => `<div><h3>${t}</h3><p>${d}</p></div>`).join('')}
     </div>
 
     <div class="observacoes">
@@ -442,8 +473,14 @@ export function montarHtml(dados: DadosDocumento): string {
       <ul>
         <li><b>Base comparativa:</b> capital segurado de ${capitalNoTexto(dados.capitalFormatado)} aplicado
             uniformemente às ${porExtenso(linhas.length)} seguradoras para garantir paridade de análise.</li>
-        <li><b><sup>1</sup> Break-even do resgate:</b> primeiro ano em que o valor de resgate
-            iguala ou supera o total de aportes pagos. Quanto menor, mais líquido o produto.</li>
+        ${
+          comResgate
+            ? `<li><b>Break-even do resgate<sup>1</sup>:</b> primeiro ano em que o valor de resgate
+            iguala ou supera o total de aportes pagos. Quanto menor, mais líquido o produto.</li>`
+            : `<li><b>Sem formação de reserva:</b> estes produtos não acumulam valor resgatável.
+            O aporte é integralmente destinado à cobertura, e por isso não se compara ao de
+            produtos com reserva.</li>`
+        }
         ${
           /*
            * O pressuposto ocupa o lugar do marcador que ja existia, em vez de

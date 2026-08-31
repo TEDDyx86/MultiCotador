@@ -77,6 +77,18 @@ export function ApoioResultado({
                     estimada
                   </span>
                 )}
+                {/*
+                 * Contorno em vez de fundo chapado, e nao na cor de alerta: o
+                 * selo "estimada" ao lado sinaliza um dado de qualidade
+                 * inferior, e este nao — nao ter resgate e caracteristica do
+                 * produto, nao defeito da cotacao. Iguais na cor, os dois se
+                 * leriam como o mesmo tipo de ressalva.
+                 */}
+                {!p.temResgate && (
+                  <span className="ml-1.5 whitespace-nowrap rounded border border-cofre-suave/40 px-1.5 py-0.5 text-xs font-medium text-cofre-suave">
+                    sem resgate
+                  </span>
+                )}
               </div>
               <span className="whitespace-nowrap font-bold tabular-nums text-cofre-texto">
                 {p.aporteAnual}

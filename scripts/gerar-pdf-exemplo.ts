@@ -4,7 +4,7 @@
  * Serve para conferir o layout contra Comparativo-WholeLife-JohnDaniel.pdf sem
  * precisar de sessao nem de navegador aberto.
  *
- * Uso: npx tsx scripts/gerar-pdf-exemplo.ts [saida.pdf]
+ * Uso: npx tsx scripts/gerar-pdf-exemplo.ts [saida.pdf] [nome] [ipca] [sem-resgate]
  */
 import { writeFileSync } from 'node:fs'
 import Decimal from 'decimal.js'
@@ -21,7 +21,8 @@ const destino = process.argv[2] ?? 'comparativo-exemplo.pdf'
 // Mesmo perfil do estudo de referencia, para permitir comparacao lado a lado.
 const capital = new Decimal('1000000')
 const projetada = process.argv[4] === 'ipca'
-const nominal = montarComparativo(repositorioJson, 'M', 50, capital)
+const modalidade = process.argv[5] === 'sem-resgate' ? 'sem-resgate' : 'com-resgate'
+const nominal = montarComparativo(repositorioJson, 'M', 50, capital, modalidade)
 const comparativo = projetada ? projetarPorIpca(nominal, IPCA_PADRAO) : nominal
 
 const html = montarHtml({
@@ -31,6 +32,7 @@ const html = montarHtml({
   capitalFormatado: moeda(capital),
   valorPreservado: moeda(comparativo.valorPreservado),
   projetada,
+  modalidade,
   taxaIpca: percentual(IPCA_PADRAO.times(100)),
   comparativo: comparativo.linhas.map((l) => ({
     produtoId: l.produtoId,

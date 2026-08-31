@@ -7,7 +7,7 @@ import { repositorioJson } from '@/lib/repositorio/repositorioJson'
 import { projetarPorIpca } from '@/lib/motor/projecao'
 import { IPCA_PADRAO, taxaDePercentual } from '@/lib/dominio/indexacao'
 import { moeda, percentual } from '@/lib/formato'
-import type { Sexo } from '@/lib/dominio/tipos'
+import type { Modalidade, Sexo } from '@/lib/dominio/tipos'
 import type { Comparativo } from '@/lib/motor/comparativo'
 
 export interface Entrada {
@@ -46,23 +46,44 @@ export interface LinhaProduto {
   aporteAnual: string
   aporteMensal: string
   estimada: boolean
+  /**
+   * Falso nos produtos que nao formam reserva resgatavel.
+   *
+   * Eles saem mais baratos que os demais por nao acumularem nada, e a lista
+   * ordena por aporte: sem marcacao, os dois aparecem no topo como se fossem a
+   * mesma coisa mais barata, e nao outro produto.
+   */
+  temResgate: boolean
+}
+
+/**
+ * Um conjunto de produtos comparaveis entre si, nas duas moedas.
+ *
+ * As duas visoes chegam juntas, e nao em duas chamadas, para o corretor
+ * alternar na frente do cliente sem espera — e sem que a tabela de tarifas
+ * precise sair do servidor.
+ */
+export interface GrupoResultado {
+  modalidade: Modalidade
+  /** Visao nominal: os numeros que as seguradoras assinam. */
+  comparativo: LinhaResultado[]
+  valorPreservado: string
+  /** A mesma tabela reexpressa em moeda futura pelo IPCA informado. */
+  projetado: LinhaResultado[]
+  valorPreservadoProjetado: string
 }
 
 export type Resultado =
   | {
       ok: true
-      /** Visao nominal: os numeros que as seguradoras assinam. */
-      comparativo: LinhaResultado[]
-      valorPreservado: string
+      comResgate: GrupoResultado
       /**
-       * A mesma tabela reexpressa em moeda futura pelo IPCA informado. Vem
-       * junto, e nao numa segunda chamada, para o corretor alternar as duas
-       * visoes na frente do cliente sem espera — e sem que a tabela de tarifas
-       * precise sair do servidor.
+       * Os produtos que nao formam reserva, para a aba ao lado. Nulo quando
+       * nenhum deles cota nesta idade — o Legado da MetLife para aos 70 anos,
+       * entao acima disso a aba nao tem o que mostrar.
        */
-      projetado: LinhaResultado[]
-      valorPreservadoProjetado: string
-      /** A taxa efetivamente usada, ja formatada ("4,5%"). */
+      semResgate: GrupoResultado | null
+      /** A taxa efetivamente usada, ja formatada ("5,0%"). */
       taxaIpca: string
       todos: LinhaProduto[]
       indisponiveis: Array<{ produtoId: string; motivo: string }>
@@ -71,6 +92,7 @@ export type Resultado =
 
 /** Formata uma visao do comparativo para a tela. */
 function paraTela(comp: Comparativo): LinhaResultado[] {
+  const temResgate = comp.modalidade === 'com-resgate'
   return comp.linhas.map((l) => ({
     produtoId: l.produtoId,
     seguradora: l.seguradora,
@@ -82,9 +104,31 @@ function paraTela(comp: Comparativo): LinhaResultado[] {
     breakevenDocumento: l.breakevenDocumento,
     breakevenReal: l.breakevenReal,
     resgate10a: moeda(l.resgate10a),
-    resgateAbaixoDoAportado: l.resgate10a.lessThan(l.aporteAcumulado10a),
+    /*
+     * Sem reserva o resgate e zero, e zero e menor que qualquer aporte. Sem
+     * esta guarda a modalidade inteira acenderia o alerta de "o resgate nao
+     * alcanca o aportado" — verdadeiro na aritmetica e sem sentido no produto,
+     * que nunca prometeu resgate nenhum.
+     */
+    resgateAbaixoDoAportado: temResgate && l.resgate10a.lessThan(l.aporteAcumulado10a),
     estimada: l.fonteTarifa === 'ESTIMADO',
   }))
+}
+
+/** Monta as duas moedas de uma modalidade. Nulo quando nada cota nela. */
+function montarGrupo(
+  nominal: Comparativo,
+  taxa: Decimal,
+): GrupoResultado | null {
+  if (nominal.linhas.length === 0) return null
+  const projecao = projetarPorIpca(nominal, taxa)
+  return {
+    modalidade: nominal.modalidade,
+    comparativo: paraTela(nominal),
+    valorPreservado: moeda(nominal.valorPreservado),
+    projetado: paraTela(projecao),
+    valorPreservadoProjetado: moeda(projecao.valorPreservado),
+  }
 }
 
 export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
@@ -131,20 +175,36 @@ export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
     }
   }
 
-  const comp = montarComparativo(repo, entrada.sexo, entrada.idade, capital)
-
   // Taxa invalida nao derruba a cotacao: cai no padrao e o documento imprime a
   // taxa que de fato foi usada, entao nao ha como sair numero sem procedencia.
   const taxa = (entrada.taxaIpca ? taxaDePercentual(entrada.taxaIpca) : null) ?? IPCA_PADRAO
-  const projecao = projetarPorIpca(comp, taxa)
+
+  const comResgate = montarGrupo(
+    montarComparativo(repo, entrada.sexo, entrada.idade, capital, 'com-resgate'),
+    taxa,
+  )
+  const semResgate = montarGrupo(
+    montarComparativo(repo, entrada.sexo, entrada.idade, capital, 'sem-resgate'),
+    taxa,
+  )
+
+  /*
+   * A aba principal vazia derruba a cotacao inteira. Chegar aqui exige que
+   * `multicotar` tenha achado algum produto e nenhum deles forme reserva — hoje
+   * so acontece acima de 75 anos, onde as quatro com resgate saem de faixa.
+   */
+  if (!comResgate) {
+    return {
+      ok: false,
+      erro: `Nenhuma seguradora com formação de reserva cota aos ${entrada.idade} anos.`,
+    }
+  }
 
   return {
     ok: true,
-    valorPreservado: moeda(comp.valorPreservado),
+    comResgate,
+    semResgate,
     indisponiveis,
-    comparativo: paraTela(comp),
-    projetado: paraTela(projecao),
-    valorPreservadoProjetado: moeda(projecao.valorPreservado),
     taxaIpca: percentual(taxa.times(100)),
     todos: cotacoes.map((c) => ({
       produtoId: c.produto.id,
@@ -154,6 +214,7 @@ export async function cotarComparativo(entrada: Entrada): Promise<Resultado> {
       aporteAnual: moeda(c.premioAnualComIof),
       aporteMensal: moeda(c.premioMensalComIof),
       estimada: c.fonteTarifa === 'ESTIMADO',
+      temResgate: c.produto.temResgate,
     })),
   }
 }
