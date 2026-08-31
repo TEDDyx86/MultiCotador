@@ -58,8 +58,23 @@ export async function abrirNavegador(): Promise<Browser> {
   })
 }
 
+/**
+ * Rodape repetido em toda pagina, para documentos de mais de uma folha.
+ *
+ * O Chrome nao herda o CSS da pagina neste template: fonte e tamanho precisam
+ * vir inline, ou o texto sai no corpo 8px padrao, ilegivel no papel.
+ */
+export interface OpcoesPdf {
+  /** HTML do rodape repetido. Aceita as classes `pageNumber` e `totalPages`. */
+  rodape?: string
+  /** Margens da folha. O comparativo de uma pagina desenha as suas no proprio CSS. */
+  margem?: { top: string; right: string; bottom: string; left: string }
+}
+
+const SEM_MARGEM = { top: '0', right: '0', bottom: '0', left: '0' }
+
 /** Renderiza o HTML numa pagina A4 e devolve os bytes do PDF. */
-export async function gerarPdf(html: string): Promise<Uint8Array> {
+export async function gerarPdf(html: string, opcoes: OpcoesPdf = {}): Promise<Uint8Array> {
   const navegador = await abrirNavegador()
   try {
     const pagina = await navegador.newPage()
@@ -73,7 +88,16 @@ export async function gerarPdf(html: string): Promise<Uint8Array> {
       format: 'A4',
       printBackground: true,
       preferCSSPageSize: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      margin: opcoes.margem ?? SEM_MARGEM,
+      ...(opcoes.rodape
+        ? {
+            displayHeaderFooter: true,
+            // Cabecalho vazio, e nao ausente: sem ele o Chrome imprime o titulo
+            // e a URL da pagina no topo de toda folha.
+            headerTemplate: '<span></span>',
+            footerTemplate: opcoes.rodape,
+          }
+        : {}),
     })
   } finally {
     await navegador.close()

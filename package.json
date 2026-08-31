@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dados": "python pipeline/gerar_dados.py && python pipeline/gerar_gabarito.py",
+    "metodologia": "tsx scripts/gerar-pdf-metodologia.ts",
     "verificar:pdf": "node scripts/verificar-bundle-pdf.mjs",
     "postbuild": "node scripts/verificar-bundle-pdf.mjs"
   },
@@ -27,6 +28,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.11",
+    "marked": "^18.0.11",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5",

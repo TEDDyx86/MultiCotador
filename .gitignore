@@ -49,6 +49,12 @@ next-env.d.ts
 # artefatos do pipeline
 _analise/__pycache__/
 
+# PDFs gerados a partir de fontes que ja estao versionadas: o comparativo sai do
+# motor, a metodologia sai de docs/METODOLOGIA-DE-CALCULO.md. Versiona-los
+# criaria uma segunda copia que envelhece em silencio quando a origem muda.
+/comparativo-exemplo.pdf
+/Metodologia-de-Calculo-Multicotador.pdf
+
 # Estudos originais das seguradoras: 762 MB de PDFs que nunca mudam.
 # Sao insumo do pipeline, nao codigo. A rastreabilidade fica na coluna
 # "origem" dos CSVs em _analise/, que guarda o nome de cada arquivo.
