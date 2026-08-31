@@ -13,10 +13,15 @@ export function Painel() {
   const [resultado, setResultado] = useState<TipoResultado | null>(null)
   const [dados, setDados] = useState<DadosFormulario | null>(null)
   /*
-   * A visao, a taxa e a modalidade moram aqui, e nao dentro do resultado,
-   * porque as duas colunas dependem delas: o quadro comparativo a direita e as
-   * observacoes tecnicas a esquerda, que mudam conforme o resgate alcance ou
-   * nao o aportado na moeda escolhida.
+   * A visao, a taxa e a modalidade moram aqui, e nao dentro do resultado, para
+   * sobreviverem a troca de resultado: o recalculo por mudanca de taxa devolve
+   * um objeto novo, e um estado guardado dentro dele voltaria ao padrao a cada
+   * tecla digitada.
+   *
+   * Ate a retirada do bloco de observacoes tecnicas, a coluna da esquerda
+   * tambem dependia da visao — as ressalvas mudavam conforme o resgate
+   * alcancasse ou nao o aportado na moeda escolhida. Hoje so o quadro
+   * comparativo, a direita, consome as tres.
    */
   const [visao, setVisao] = useState<Visao>('nominal')
   const [modalidade, setModalidade] = useState<Modalidade>('com-resgate')
@@ -86,13 +91,7 @@ export function Painel() {
             setModalidade('com-resgate')
           }}
         />
-        {resultado?.ok && grupo && (
-          <ApoioResultado
-            comparativo={visao === 'ipca' ? grupo.projetado : grupo.comparativo}
-            todos={resultado.todos}
-            indisponiveis={resultado.indisponiveis}
-          />
-        )}
+        {resultado?.ok && <ApoioResultado todos={resultado.todos} />}
       </motion.div>
 
       <div className="min-w-0">
