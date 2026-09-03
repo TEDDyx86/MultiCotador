@@ -1,7 +1,12 @@
 import Image from 'next/image'
 import { BotaoSair } from './BotaoSair'
+import { BotaoFeedback } from './BotaoFeedback'
 
-export function Cabecalho() {
+interface CabecalhoProps {
+  usuarioEmail?: string | null
+}
+
+export function Cabecalho({ usuarioEmail }: CabecalhoProps) {
   return (
     <header className="relative overflow-hidden border-b border-cofre-borda bg-gradient-to-r from-[#061224] via-[#0B1B38] to-[#061224]">
       {/*
@@ -47,6 +52,11 @@ export function Cabecalho() {
         <div className="flex items-center gap-4">
           {/* A assinatura some no celular para o botao de sair nao competir com ela */}
           <div className="hidden text-right sm:block">
+            {usuarioEmail ? (
+              <p className="text-[11px] font-medium tracking-wide text-cofre-acento truncate max-w-[220px]">
+                {usuarioEmail}
+              </p>
+            ) : null}
             <p className="text-xs font-semibold uppercase tracking-wider text-cofre-texto">
               Planejamento Patrimonial
             </p>
@@ -54,7 +64,10 @@ export function Cabecalho() {
               e Sucessório
             </p>
           </div>
-          <BotaoSair />
+          <div className="flex items-center gap-2">
+            <BotaoFeedback />
+            <BotaoSair />
+          </div>
         </div>
       </div>
     </header>

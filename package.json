@@ -10,11 +10,16 @@
     "test:watch": "vitest",
     "dados": "python pipeline/gerar_dados.py && python pipeline/gerar_gabarito.py",
     "metodologia": "tsx scripts/gerar-pdf-metodologia.ts",
+    "usuario:criar": "tsx scripts/criar-usuario.ts",
+    "feedback:listar": "tsx scripts/listar-feedbacks.ts",
+    "supabase:verificar": "tsx scripts/verificar-supabase.ts",
     "verificar:pdf": "node scripts/verificar-bundle-pdf.mjs",
     "postbuild": "node scripts/verificar-bundle-pdf.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.114.0",
     "decimal.js": "^10.6.0",
     "motion": "^13.1.0",
     "next": "16.3.1",

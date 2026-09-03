@@ -1,8 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { verificarSessao } from '@/lib/auth/sessao'
-import { COOKIE_SESSAO } from '@/lib/auth/config'
-
-const TAMANHO_MINIMO_SEGREDO = 32
+import { createServerClient } from '@supabase/ssr'
 
 /**
  * Padrao das rotas protegidas. Protege tudo, menos:
@@ -31,24 +28,57 @@ export const PADRAO_ROTAS_PROTEGIDAS =
   '/((?!login$|login/|api/login$|_next/static|_next/image|marcas/|favicon\\.ico).*)'
 
 /**
- * Bloqueia tudo que nao tenha cookie de sessao valido.
+ * Bloqueia tudo que nao tenha sessao autenticada e valida no Supabase.
  *
- * Roda no Edge Runtime, entao so pode usar Web Crypto — por isso verifica a
- * assinatura do cookie em vez da senha. A senha e verificada uma unica vez,
- * na rota de login, que roda em Node.
+ * Atualiza cookies de sessao automaticamente em transito quando renovados.
+ * Roda no Edge Runtime/Proxy, utilizando @supabase/ssr com Web Crypto.
  */
 export async function proxy(requisicao: NextRequest) {
-  const segredo = process.env.APP_SESSAO_SEGREDO
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // Sem segredo, ou com segredo curto demais para ser seguro, negar tudo.
-  // Falhar aberto deixaria a aplicacao exposta silenciosamente.
-  if (!segredo || segredo.length < TAMANHO_MINIMO_SEGREDO) {
+  // Falha fechado: sem configuracao, bloqueia tudo para evitar exposicao acidental.
+  if (!supabaseUrl || !supabaseKey) {
     return new NextResponse('Aplicacao nao configurada.', { status: 503 })
   }
 
-  const token = requisicao.cookies.get(COOKIE_SESSAO)?.value
-  if (token && (await verificarSessao(segredo, token))) {
-    return NextResponse.next()
+  let resposta = NextResponse.next({
+    request: {
+      headers: requisicao.headers,
+    },
+  })
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return requisicao.cookies.getAll()
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => requisicao.cookies.set(name, value))
+        resposta = NextResponse.next({
+          request: requisicao,
+        })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          resposta.cookies.set(name, value, {
+            ...options,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          }),
+        )
+      },
+    },
+  })
+
+  // OWASP A01 / A07: getUser valida criptograficamente a sessao contra o Supabase.
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
+  if (user && !error) {
+    return resposta
   }
 
   // Chamada de API sem sessao valida recebe JSON, nao redirect: um fetch()

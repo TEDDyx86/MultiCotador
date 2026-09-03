@@ -6,13 +6,18 @@ export const DURACAO_SESSAO_SEGUNDOS = 8 * 60 * 60
 /** Um HMAC-SHA256 com chave curta e forjavel na pratica. */
 const TAMANHO_MINIMO_SEGREDO = 32
 
+export type VariavelConfiguracao =
+  | 'APP_SENHA_HASH'
+  | 'APP_SESSAO_SEGREDO'
+  | 'NEXT_PUBLIC_SUPABASE_URL'
+  | 'NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  | 'SUPABASE_SERVICE_ROLE_KEY'
+
 /**
  * Le uma variavel obrigatoria. Falha alto e cedo — uma aplicacao que sobe sem
  * segredo configurado ficaria aberta sem ninguem perceber.
- * Nenhuma destas variaveis tem prefixo NEXT_PUBLIC_, entao nunca chegam ao
- * navegador.
  */
-export function segredoObrigatorio(nome: 'APP_SENHA_HASH' | 'APP_SESSAO_SEGREDO'): string {
+export function segredoObrigatorio(nome: VariavelConfiguracao): string {
   const valor = process.env[nome]
   if (!valor) {
     throw new Error(

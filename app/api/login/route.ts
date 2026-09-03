@@ -1,64 +1,108 @@
 import { NextResponse } from 'next/server'
-import { verificarSenha } from '@/lib/auth/senha'
-import { assinarSessao } from '@/lib/auth/sessao'
+import { criarClienteServidor } from '@/lib/supabase/servidor'
 import { bloqueado, limparIp, registrarTentativa } from '@/lib/auth/limite'
+import { ipDoCliente } from '@/lib/auth/config'
 import {
-  COOKIE_SESSAO,
-  DURACAO_SESSAO_SEGUNDOS,
-  ipDoCliente,
-  segredoObrigatorio,
-} from '@/lib/auth/config'
+  sanitizarEmail,
+  validarSenha,
+  MENSAGEM_ERRO_LOGIN_GENERICA,
+} from '@/lib/auth/validacao'
 
-// scrypt vem de node:crypto, que nao existe no Edge Runtime.
 export const runtime = 'nodejs'
+
+interface CorpoLogin {
+  email?: unknown
+  senha?: unknown
+}
 
 export async function POST(requisicao: Request) {
   const ip = ipDoCliente(requisicao)
 
-  // Antes de qualquer coisa cara: scrypt custa ~100ms e 32MB por chamada, e
-  // aqui ainda nao ha autenticacao nenhuma.
+  // OWASP A07: Protecao contra forca bruta e credential stuffing por IP
   if (bloqueado(ip)) {
     return NextResponse.json(
       { erro: 'Muitas tentativas. Tente novamente em alguns minutos.' },
-      { status: 429 },
+      {
+        status: 429,
+        headers: {
+          'Cache-Control': 'no-store',
+          'Retry-After': '900',
+        },
+      },
     )
   }
 
-  let senha: unknown
+  let corpo: CorpoLogin
   try {
-    senha = (await requisicao.json())?.senha
+    corpo = await requisicao.json()
   } catch {
-    senha = undefined
+    corpo = {}
   }
 
-  if (typeof senha !== 'string' || senha.length === 0) {
+  const email = sanitizarEmail(corpo.email)
+  const validacaoSenha = validarSenha(corpo.senha)
+
+  // OWASP Anti-Enumeration (WSTG-ATHN-02):
+  // Se o email for malformado ou a senha for invalida, retornamos a MESMA
+  // mensagem generica para impedir que um atacante descubra se um email existe.
+  if (!email || !validacaoSenha.valido || typeof corpo.senha !== 'string') {
     registrarTentativa(ip)
-    return NextResponse.json({ erro: 'Senha invalida.' }, { status: 400 })
+    return NextResponse.json(
+      { erro: MENSAGEM_ERRO_LOGIN_GENERICA },
+      {
+        status: 401,
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    )
   }
 
-  const confere = await verificarSenha(senha, segredoObrigatorio('APP_SENHA_HASH'))
-  if (!confere) {
-    registrarTentativa(ip)
-    // Mensagem generica: nao confirma nem nega nada sobre a senha correta.
-    return NextResponse.json({ erro: 'Senha invalida.' }, { status: 401 })
+  try {
+    const supabase = await criarClienteServidor()
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: corpo.senha,
+    })
+
+    if (error || !data.session || !data.user) {
+      registrarTentativa(ip)
+      return NextResponse.json(
+        { erro: MENSAGEM_ERRO_LOGIN_GENERICA },
+        {
+          status: 401,
+          headers: { 'Cache-Control': 'no-store' },
+        },
+      )
+    }
+
+    // Sucesso: reseta historico de tentativas deste IP
+    limparIp(ip)
+
+    return NextResponse.json(
+      {
+        ok: true,
+        usuario: {
+          id: data.user.id,
+          email: data.user.email,
+        },
+      },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          Pragma: 'no-cache',
+        },
+      },
+    )
+  } catch (err) {
+    // Falha de infraestrutura (ex: variaveis do Supabase nao configuradas)
+    console.error('Erro na autenticacao:', err instanceof Error ? err.message : err)
+    return NextResponse.json(
+      { erro: 'Serviço de autenticação temporariamente indisponível.' },
+      {
+        status: 503,
+        headers: { 'Cache-Control': 'no-store' },
+      },
+    )
   }
-
-  // Quem errou quatro vezes e acertou na quinta nao deve carregar as quatro
-  // marcas pelos proximos quinze minutos.
-  limparIp(ip)
-
-  const token = await assinarSessao(
-    segredoObrigatorio('APP_SESSAO_SEGREDO'),
-    DURACAO_SESSAO_SEGUNDOS,
-  )
-
-  const resposta = NextResponse.json({ ok: true })
-  resposta.cookies.set(COOKIE_SESSAO, token, {
-    httpOnly: true, // JavaScript da pagina nao consegue ler
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    maxAge: DURACAO_SESSAO_SEGUNDOS,
-  })
-  return resposta
 }

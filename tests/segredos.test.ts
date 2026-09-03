@@ -24,12 +24,15 @@ function arquivos(raiz: string, extensao: string): string[] {
 describe('segredos nao vazam para o cliente', () => {
   it('nenhuma variavel de segredo usa o prefixo NEXT_PUBLIC_', () => {
     // Uma variavel NEXT_PUBLIC_* e embutida no JavaScript servido ao navegador.
+    // `scripts` entra varrido, e nao numa lista escrita a mao: a lista anterior
+    // dependia de alguem lembrar de acrescentar cada script novo, e justamente
+    // os administrativos sao os que lidam com a chave de servico.
     const fontes = [
       ...arquivos('lib', '.ts'),
       ...arquivos('app', '.tsx'),
       ...arquivos('app', '.ts'),
+      ...arquivos('scripts', '.ts'),
       'proxy.ts',
-      'scripts/gerar-hash.ts',
     ]
     const suspeitos: string[] = []
     for (const arquivo of fontes) {
@@ -62,7 +65,11 @@ describe('segredos nao vazam para o cliente', () => {
     )
     const vazando = clientes.filter((arquivo) => {
       const conteudo = readFileSync(arquivo, 'utf8')
-      return conteudo.includes('APP_SESSAO_SEGREDO') || conteudo.includes('APP_SENHA_HASH')
+      return (
+        conteudo.includes('APP_SESSAO_SEGREDO') ||
+        conteudo.includes('APP_SENHA_HASH') ||
+        conteudo.includes('SUPABASE_SERVICE_ROLE_KEY')
+      )
     })
     expect(vazando).toEqual([])
   })

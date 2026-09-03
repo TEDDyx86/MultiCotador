@@ -1,10 +1,13 @@
 import { Cabecalho } from './componentes/Cabecalho'
 import { Painel } from './componentes/Painel'
+import { obterUsuarioAtual } from '@/lib/supabase/servidor'
 
-export default function Pagina() {
+export default async function Pagina() {
+  const usuario = await obterUsuarioAtual()
+
   return (
     <>
-      <Cabecalho />
+      <Cabecalho usuarioEmail={usuario?.email} />
       {/* py-5 e nao py-8: sao 24px de respiro que decidiam se a tela rola ou
           nao num MacBook Air, e a moldura ja e generosa sem eles. */}
       <main className="mx-auto w-full max-w-6xl px-6 pt-5 pb-4">
